@@ -157,6 +157,43 @@ const fEls = {
   dots: $$('#fighter-dots button'),
   fallback: $('#fighter-fallback'),
 };
+/* outlined name behind the model: an svg so its stroke can be drawn and lit */
+const SVGNS = 'http://www.w3.org/2000/svg';
+function renderGhost(name) {
+  const g = fEls.ghost;
+  g.textContent = '';
+  g.classList.add('is-svg');
+  const svg = document.createElementNS(SVGNS, 'svg');
+  const layer = (cls) => {
+    const t = document.createElementNS(SVGNS, 'text');
+    t.setAttribute('class', cls);
+    t.setAttribute('x', '0');
+    t.setAttribute('dominant-baseline', 'alphabetic');
+    t.textContent = name.toUpperCase();
+    svg.appendChild(t);
+    return t;
+  };
+  const fill = layer('ghost__fill');
+  const base = layer('ghost__base');
+  const runs = reduced ? [] : [layer('ghost__run'), layer('ghost__run ghost__run--b')];
+  g.appendChild(svg);
+  // size the svg to the text so the existing centring transform keeps working
+  const fit = () => {
+    const b = base.getBBox();
+    const pad = 8;
+    svg.setAttribute('viewBox', `${b.x - pad} ${b.y - pad} ${b.width + pad * 2} ${b.height + pad * 2}`);
+    svg.setAttribute('width', b.width + pad * 2);
+    svg.setAttribute('height', b.height + pad * 2);
+  };
+  fit();
+  document.fonts?.ready.then(fit);
+  if (reduced) return;
+  // draw-in: the outline traces itself, the runners and fill follow
+  gsap.fromTo(base, { strokeDasharray: 1200, strokeDashoffset: 1200 }, { strokeDashoffset: 0, duration: 1.8, ease: 'power2.inOut' });
+  gsap.fromTo([fill, ...runs], { opacity: 0 }, { opacity: 1, duration: 1, delay: 0.9, ease: 'power1.out', clearProps: 'opacity' });
+}
+addEventListener('resize', () => fighterNow >= 0 && renderGhost(FIGHTERS[fighterNow].name));
+
 let fighterNow = -1;
 function setFighter(i) {
   if (i === fighterNow) return;
@@ -168,7 +205,7 @@ function setFighter(i) {
   fEls.dots.forEach((b, k) => b.classList.toggle('is-active', k === i));
   fighterFx?.go(i, dir);
   const swap = () => {
-    fEls.ghost.textContent = f.name;
+    renderGhost(f.name);
     fEls.no.textContent = `0${i + 1}`;
     fEls.role.textContent = f.role;
     fEls.name.textContent = f.name;
@@ -188,7 +225,7 @@ function setFighter(i) {
     .to(fEls.ghost, { opacity: 0, xPercent: -8 * dir, duration: 0.25 }, 0)
     .add(swap)
     .fromTo(text, { y: 40 * dir, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, stagger: 0.07, ease: 'expo.out' })
-    .fromTo(fEls.ghost, { opacity: 0, xPercent: 8 * dir }, { opacity: 0.5, xPercent: 0, duration: 1.1, ease: 'expo.out' }, '<');
+    .fromTo(fEls.ghost, { opacity: 0, xPercent: 8 * dir }, { opacity: 1, xPercent: 0, duration: 1.1, ease: 'expo.out' }, '<');
 }
 setFighter(0);
 function updateFighters() {

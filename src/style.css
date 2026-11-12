@@ -571,6 +571,49 @@ button {
   pointer-events: none;
   user-select: none;
 }
+/* svg version: the outline draws itself in, then light keeps running around the letters */
+.fighters__ghost.is-svg {
+  -webkit-text-stroke: 0;
+  opacity: 1;
+}
+.fighters__ghost svg {
+  display: block;
+  overflow: visible;
+}
+.fighters__ghost text {
+  font: inherit;
+  letter-spacing: inherit;
+  fill: transparent;
+}
+.ghost__base {
+  stroke: color-mix(in srgb, var(--fc) 42%, transparent);
+  stroke-width: 1.2px;
+}
+.ghost__fill {
+  fill: color-mix(in srgb, var(--fc) 9%, transparent) !important;
+  animation: ghost-breathe 5s ease-in-out infinite;
+}
+.ghost__run {
+  stroke: var(--fc);
+  stroke-width: 2px;
+  stroke-linecap: round;
+  stroke-dasharray: 150 1050;
+  filter: drop-shadow(0 0 6px var(--fc)) drop-shadow(0 0 18px color-mix(in srgb, var(--fc) 60%, transparent));
+  animation: ghost-run 6s linear infinite;
+}
+.ghost__run--b {
+  stroke-dasharray: 30 1170;
+  opacity: 0.7;
+  animation-duration: 9s;
+  animation-direction: reverse;
+}
+@keyframes ghost-run {
+  to { stroke-dashoffset: -1200; }
+}
+@keyframes ghost-breathe {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
 .fighters__canvas {
   position: absolute;
   inset: 0;
