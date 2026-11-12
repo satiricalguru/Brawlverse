@@ -161,6 +161,17 @@ Watch or ⭐ the repo to see the playable build land.
 
 Issues and ideas are welcome — open one at [github.com/satiricalguru/Brawlverse/issues](https://github.com/satiricalguru/Brawlverse/issues). For code changes, fork, branch, and open a pull request with a short description and a screenshot or clip if it's visual.
 
+## 👥 Contributors
+
+Brawlverse is built in the open. Thanks to everyone who has pushed to this repo:
+
+- **[@Mxhi-04](https://github.com/Mxhi-04)** — documentation, asset references and repo upkeep
+- **[@satiricalguru](https://github.com/satiricalguru)** — direction, design and the build
+- **[Copilot](https://github.com/apps/copilot-swe-agent)**, **[Cursor Agent](https://github.com/cursoragent)** and **[Codex](https://github.com/codex)** — agent-assisted code, refactors and tooling
+- **[dependabot[bot]](https://github.com/apps/dependabot)** and **[github-actions[bot]](https://github.com/actions)** — dependency bumps and CI
+
+Every commit is attributed, so the full list also lives in the [contributors graph](https://github.com/satiricalguru/Brawlverse/graphs/contributors).
+
 ## 🙏 Credits
 
 - **Characters:** rigged models and animations from [Adobe Mixamo](https://www.mixamo.com).
