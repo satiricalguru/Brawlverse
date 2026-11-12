@@ -5,3 +5,5 @@ dist
 public/models/*.glb
 public/models/relief
 public/models/kaykit
+assets
+README.md

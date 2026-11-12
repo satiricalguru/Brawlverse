@@ -52,8 +52,10 @@ for name in names:
     world.node_tree.nodes['Background'].inputs[0].default_value = (0.18, 0.18, 0.2, 1)
     scn.world = world
     scn.render.engine = 'BLENDER_EEVEE_NEXT' if 'BLENDER_EEVEE_NEXT' in [e.identifier for e in bpy.types.RenderSettings.bl_rna.properties['engine'].enum_items] else 'BLENDER_EEVEE'
-    scn.render.resolution_x = 900
-    scn.render.resolution_y = 1200
+    scn.render.resolution_x = 1200
+    scn.render.resolution_y = 1600
+    scn.render.film_transparent = True
+    scn.render.image_settings.color_mode = 'RGBA'
     scn.render.filepath = os.path.join(out_dir, name + '_ref.png')
     scn.view_settings.view_transform = 'AgX' if 'AgX' in [v.identifier for v in scn.view_settings.bl_rna.properties['view_transform'].enum_items] else 'Filmic'
     bpy.ops.render.render(write_still=True)

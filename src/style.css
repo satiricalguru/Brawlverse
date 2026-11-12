@@ -237,6 +237,21 @@ button {
 .logo {
   flex: none;
   color: var(--ink);
+  overflow: visible;
+}
+/* hover: the two arrowheads strike forward, the lower one a beat later */
+.logo path {
+  transition: transform 0.45s var(--ease), fill 0.3s;
+}
+.logo path:nth-child(3) {
+  transition-delay: 0.05s;
+}
+.nav__brand:hover .logo path:nth-child(2) {
+  transform: translateX(2px);
+}
+.nav__brand:hover .logo path:nth-child(3) {
+  transform: translateX(3.5px);
+  fill: var(--amber);
 }
 .nav__links {
   display: flex;
@@ -334,6 +349,33 @@ button {
 }
 .wordmark span {
   display: inline-block;
+}
+/* pointer light: the title's own fill, clipped to its letters; --hr grows it in/out */
+@property --hr {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+.wordmark.is-lit {
+  --hx: 50;
+  --hy: 50;
+  --hr: 0;
+  transition: --hr 0.7s var(--ease);
+  background: radial-gradient(
+    circle calc(min(24vw, 460px) * var(--hr)) at calc(var(--hx) * 1%) calc(var(--hy) * 1%),
+    #ffd29a 0%,
+    #ff8a4c 30%,
+    #ff4f8b 55%,
+    var(--ink) 100%
+  ), var(--ink);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.wordmark.is-lit.is-hot {
+  --hr: 1;
+}
+.wordmark.is-lit span {
+  color: transparent;
 }
 .hero__tag {
   margin-top: clamp(14px, 2.6vh, 30px);
@@ -993,7 +1035,7 @@ button {
     linear-gradient(180deg, var(--bg) 0%, transparent 22%, transparent 74%, var(--bg) 100%);
 }
 .cta {
-  background: #1a1420 url('/media/arena_morning.webp') center / cover no-repeat;
+  background: #1a1420 url('/media/arena_morning.webp?v=2') center / cover no-repeat;
 }
 .cta .label {
   margin-bottom: 24px;

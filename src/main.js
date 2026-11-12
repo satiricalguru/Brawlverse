@@ -62,8 +62,25 @@ const beats = $$('.beat').map((el) => ({ el, a: +el.dataset.in, b: +el.dataset.o
 
 const wordmark = $('#wordmark');
 wordmark.innerHTML = [...wordmark.textContent.trim()].map((c) => `<span aria-hidden="true">${c}</span>`).join('');
+// once the letters have landed, the title takes a pointer-following colour light
+const lightWordmark = () => {
+  gsap.set('#wordmark span', { clearProps: 'transform' });
+  wordmark.classList.add('is-lit');
+  if (reduced || !matchMedia('(hover: hover)').matches) return;
+  const toX = gsap.quickTo(wordmark, '--hx', { duration: 0.6, ease: 'power3.out' });
+  const toY = gsap.quickTo(wordmark, '--hy', { duration: 0.6, ease: 'power3.out' });
+  const hero = $('#hero');
+  hero.addEventListener('pointermove', (e) => {
+    const b = wordmark.getBoundingClientRect();
+    toX(((e.clientX - b.left) / b.width) * 100);
+    toY(((e.clientY - b.top) / b.height) * 100);
+    wordmark.classList.add('is-hot');
+  });
+  hero.addEventListener('pointerleave', () => wordmark.classList.remove('is-hot'));
+};
+if (reduced) lightWordmark();
 if (!reduced) {
-  gsap.from('#wordmark span', { yPercent: 110, duration: 1.3, stagger: 0.045, ease: 'expo.out', delay: 0.1 });
+  gsap.from('#wordmark span', { yPercent: 110, duration: 1.3, stagger: 0.045, ease: 'expo.out', delay: 0.1, onComplete: lightWordmark });
   gsap.from('.hero__title .label, .hero__tag, .hero__cta', {
     opacity: 0,
     y: 20,
@@ -121,10 +138,10 @@ function updateStatement() {
 
 /* ---------- fighters ---------- */
 const FIGHTERS = [
-  { name: 'Kael', role: 'Bruiser · Cinder Forge', color: '#ff6a2b', img: '/media/fighter_kael_cut.webp', model: '/models/mixamo/kael.glb', idle: 'Idle', intro: 'Attack', desc: 'Slow to start, impossible to stop. Full plate and heavy blows that end stocks early.', stats: [9, 4, 5] },
-  { name: 'Nyx', role: 'Duelist · Neon Abyss', color: '#39d5ff', img: '/media/fighter_nyx_cut.webp', model: '/models/mixamo/nyx.glb', idle: 'Idle', desc: 'A long blade and a fast dash that punishes anything left hanging.', stats: [6, 8, 9] },
-  { name: 'Bramm', role: 'Heavyweight · Sunken Colosseum', color: '#4dff9a', img: '/media/fighter_bramm_cut.webp', model: '/models/mixamo/bramm.glb', idle: 'Idle', desc: 'The hardest fighter to launch. Shrugs off light hits and answers with the whole arena.', stats: [10, 2, 6] },
-  { name: 'Zephra', role: 'Acrobat · Frostspire Summit', color: '#c77dff', img: '/media/fighter_zephra_cut.webp', model: '/models/mixamo/zephra.glb', idle: 'Idle', desc: 'Lives in the air. Extra jumps, flying kicks, and the best recovery in the roster.', stats: [4, 10, 5] },
+  { name: 'Kael', role: 'Bruiser · Cinder Forge', color: '#ff6a2b', img: '/media/fighter_kael_cut.webp?v=2', model: '/models/mixamo/kael.glb', idle: 'Idle', intro: 'Attack', desc: 'Slow to start, impossible to stop. Full plate and heavy blows that end stocks early.', stats: [9, 4, 5] },
+  { name: 'Nyx', role: 'Duelist · Neon Abyss', color: '#39d5ff', img: '/media/fighter_nyx_cut.webp?v=2', model: '/models/mixamo/nyx.glb', idle: 'Idle', desc: 'A long blade and a fast dash that punishes anything left hanging.', stats: [6, 8, 9] },
+  { name: 'Bramm', role: 'Heavyweight · Sunken Colosseum', color: '#4dff9a', img: '/media/fighter_bramm_cut.webp?v=2', model: '/models/mixamo/bramm.glb', idle: 'Idle', desc: 'The hardest fighter to launch. Shrugs off light hits and answers with the whole arena.', stats: [10, 2, 6] },
+  { name: 'Zephra', role: 'Acrobat · Frostspire Summit', color: '#c77dff', img: '/media/fighter_zephra_cut.webp?v=2', model: '/models/mixamo/zephra.glb', idle: 'Idle', desc: 'Lives in the air. Extra jumps, flying kicks, and the best recovery in the roster.', stats: [4, 10, 5] },
 ];
 const fightersEl = $('#fighters');
 const fightersSticky = $('#fighters-sticky');
