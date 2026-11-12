@@ -11,5 +11,5 @@ media-src/
 public/models/*.glb
 public/models/relief/
 public/models/kaykit/
-.claude/settings.local.json
+.claude/
 __pycache__/
