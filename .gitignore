@@ -10,3 +10,4 @@ public/models/*.glb
 public/models/relief/
 public/models/kaykit/
 .claude/settings.local.json
+__pycache__/
