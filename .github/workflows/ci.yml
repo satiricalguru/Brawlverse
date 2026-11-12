@@ -42,6 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -68,7 +69,11 @@ jobs:
             echo
             echo "Total: $(awk -v b="$total" 'BEGIN { printf "%.1f KB", b / 1024 }')"
           } > .github/build-report.md
-      - name: Commit the report
+      # main only accepts pull requests, so the bot commits to its own branch and
+      # opens (or refreshes) a PR; merging it lands the commit on main under its name.
+      - name: Open or update the report PR
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -77,5 +82,11 @@ jobs:
             echo "The bundle has not changed since the last report."
             exit 0
           fi
+          git switch -c ci/build-report
           git commit -m 'ci: record the build report'
-          git push
+          git push --force origin ci/build-report
+          if [ -z "$(gh pr list --head ci/build-report --state open --json number --jq '.[0].number')" ]; then
+            gh pr create --base main --head ci/build-report \
+              --title 'ci: record the build report' \
+              --body 'Bundle sizes from the latest build on main, written by CI. Merge to keep `.github/build-report.md` current.'
+          fi
