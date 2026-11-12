@@ -35,7 +35,7 @@ Brawlverse is a platform fighter you play **in a browser tab**: four fighters, f
 | | |
 |:--|:--|
 | 🎬 **Scroll-driven trailer** | A 128-frame cinematic clip scrubbed frame-by-frame by your scroll, rendered on a WebGL shader with RGB split, embers and letterbox bars. |
-| 🧍 **Real 3D fighters** | Rigged, animated characters on a turntable — drag to spin them, scroll to switch. Environment reflections, coloured rim lights, a glowing arena disc. |
+| 🧍 **Real 3D fighters** | Rigged, animated characters on lit plinths, posed to face you — drag to spin them, scroll to switch. Environment reflections and rim lights in each fighter's colour. |
 | 🌋 **Living stages** | Every stage still gets an AI depth map, so the shader moves near and far layers separately — the art reads as a 3D set, not a JPEG. |
 | ✨ **Small, crafted details** | A cursor-following light in the titles, letters that rise with scroll, a star count that counts up, a closing video that only plays when on screen. |
 | ⚡ **Fast** | Frames stream in coarse-to-fine, renderers sleep off-screen, pixel ratio is capped on weaker devices, and everything ships from Vercel's edge with long-lived caching. |
@@ -45,9 +45,7 @@ Brawlverse is a platform fighter you play **in a browser tab**: four fighters, f
 
 ## 🥊 The roster
 
-<p align="center">
-  <img src="assets/fighter-turntable.gif" width="46%" alt="The Kael 3D model turning on its glowing arena disc" />
-</p>
+<img src="assets/roster-lineup.jpg" width="100%" alt="All four Brawlverse fighters lined up on glowing plinths under coloured light shafts: Kael, Nyx, Bramm and Zephra" />
 
 <table>
   <tr>
@@ -57,6 +55,13 @@ Brawlverse is a platform fighter you play **in a browser tab**: four fighters, f
   <tr>
     <td width="50%"><img src="assets/fighter-bramm.jpg" alt="Bramm, a hulking brute with glowing crystal spikes" /><br /><b>Bramm</b> — Heavyweight · Sunken Colosseum<br /><sub>The hardest fighter to launch. Shrugs off light hits and answers with the whole arena.</sub></td>
     <td width="50%"><img src="assets/fighter-zephra.jpg" alt="Zephra, a martial artist in red" /><br /><b>Zephra</b> — Acrobat · Frostspire Summit<br /><sub>Lives in the air. Extra jumps, flying kicks, and the best recovery in the roster.</sub></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td width="38%"><img src="assets/fighter-turntable.gif" alt="Kael idling on his plinth: a slow sway under a shaft of light, the rim glowing in his colour" /></td>
+    <td><b>Live on the page</b><br /><sub>Each fighter stands on a dark metal plinth with a rim lit in their colour, a contact shadow and a shaft of light from above. They hold a front three-quarter pose with a slow sway; drag to spin them round and they settle back to face you. The outlined name behind them draws itself in, with light running around the letters.</sub></td>
   </tr>
 </table>
 
@@ -118,7 +123,7 @@ Open the URL Vite prints (default `http://localhost:5173`) and scroll.
 flowchart LR
   scroll([Native scroll]) --> loop[rAF loop<br/>section progress]
   loop --> hero[Hero<br/>128 webp frames → shader plane]
-  loop --> fighters[Fighters<br/>GLB + AnimationMixer turntable]
+  loop --> fighters[Fighters<br/>GLB + AnimationMixer on a lit plinth]
   loop --> stages[Stages<br/>noise wipe + depth parallax]
   gsap[GSAP ScrollTrigger] --> reveals[Text reveals<br/>footer wordmark]
   hero & fighters & stages --> gl((three.js / WebGL))

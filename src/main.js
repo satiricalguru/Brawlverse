@@ -127,7 +127,7 @@ function updateStatement() {
 const FIGHTERS = [
   { name: 'Kael', role: 'Bruiser · Cinder Forge', color: '#ff6a2b', img: '/media/fighter_kael_cut.webp?v=2', model: '/models/mixamo/kael.glb', idle: 'Idle', intro: 'Attack', desc: 'Slow to start, impossible to stop. Full plate and heavy blows that end stocks early.', stats: [9, 4, 5] },
   { name: 'Nyx', role: 'Duelist · Neon Abyss', color: '#39d5ff', img: '/media/fighter_nyx_cut.webp?v=2', model: '/models/mixamo/nyx.glb', idle: 'Idle', desc: 'A long blade and a fast dash that punishes anything left hanging.', stats: [6, 8, 9] },
-  { name: 'Bramm', role: 'Heavyweight · Sunken Colosseum', color: '#4dff9a', img: '/media/fighter_bramm_cut.webp?v=2', model: '/models/mixamo/bramm.glb', idle: 'Idle', desc: 'The hardest fighter to launch. Shrugs off light hits and answers with the whole arena.', stats: [10, 2, 6] },
+  { name: 'Bramm', role: 'Heavyweight · Sunken Colosseum', color: '#4dff9a', img: '/media/fighter_bramm_cut.webp?v=2', model: '/models/mixamo/bramm.glb', idle: 'Idle', glow: 0.45, desc: 'The hardest fighter to launch. Shrugs off light hits and answers with the whole arena.', stats: [10, 2, 6] },
   { name: 'Zephra', role: 'Acrobat · Frostspire Summit', color: '#c77dff', img: '/media/fighter_zephra_cut.webp?v=2', model: '/models/mixamo/zephra.glb', idle: 'Idle', desc: 'Lives in the air. Extra jumps, flying kicks, and the best recovery in the roster.', stats: [4, 10, 5] },
 ];
 const fightersEl = $('#fighters');

@@ -3,8 +3,8 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import gsap from 'gsap';
 
-// Fighters are rigged, animated GLB characters (KayKit Adventurers, CC0 - see public/models/kaykit/LICENSE.txt).
-// They idle, play a signature move when selected, spin on a turntable, and can be dragged.
+// Fighters are rigged, animated Mixamo characters (GLB, converted by tools/convert_mixamo.py).
+// They idle on a lit plinth facing the camera, sway gently, and can be dragged round; they settle back to the front.
 
 const DUST_VERT = /* glsl */ `
   attribute vec4 aSeed;
@@ -33,6 +33,7 @@ const DUST_FRAG = /* glsl */ `
   }
 `;
 
+// soft pool of coloured light on the floor around the pedestal
 const DISC_FRAG = /* glsl */ `
   precision highp float;
   uniform vec3 uColor;
@@ -40,11 +41,64 @@ const DISC_FRAG = /* glsl */ `
   varying vec2 vUv;
   void main() {
     float r = length(vUv - 0.5) * 2.0;
-    float glow = smoothstep(1.0, 0.0, r);
-    float ring = smoothstep(0.02, 0.0, abs(r - 0.62)) + smoothstep(0.012, 0.0, abs(r - 0.82)) * 0.6;
-    float pulse = smoothstep(0.03, 0.0, abs(r - fract(uTime * 0.18))) * (1.0 - r);
-    vec3 c = uColor * (glow * glow * 0.5 + ring * 0.8 + pulse * 0.7) * smoothstep(1.0, 0.85, r);
+    float glow = pow(smoothstep(1.0, 0.0, r), 2.4);
+    float breathe = 0.85 + 0.15 * sin(uTime * 1.3);
+    vec3 c = uColor * glow * 0.42 * breathe;
     gl_FragColor = vec4(c, clamp(max(c.r, max(c.g, c.b)), 0.0, 1.0));
+  }
+`;
+// plinth top: dark engraved metal, lit from the shaft above, with a light sweeping round the inner ring
+const CAP_FRAG = /* glsl */ `
+  precision highp float;
+  uniform vec3 uColor;
+  uniform float uTime;
+  varying vec2 vUv;
+  void main() {
+    vec2 p = vUv - 0.5;
+    float r = length(p) * 2.0;
+    float a = atan(p.y, p.x);
+    vec3 base = vec3(0.035, 0.03, 0.045);
+    float pool = pow(smoothstep(1.0, 0.0, r), 1.8);
+    float grooves = smoothstep(0.5, 0.42, abs(fract(r * 18.0) - 0.5)) * 0.35 * smoothstep(0.25, 0.6, r);
+    float ring = smoothstep(0.012, 0.0, abs(r - 0.86));
+    float sweep = pow(0.5 + 0.5 * cos(a - uTime * 0.8), 18.0);
+    vec3 c = base * (1.0 + grooves) + vec3(0.12, 0.11, 0.13) * pool + uColor * (pool * 0.08 + ring * (0.25 + sweep * 1.4));
+    gl_FragColor = vec4(c, 1.0);
+  }
+`;
+// contact shadow under the feet (normal blending, darkens what is behind)
+const SHADOW_FRAG = /* glsl */ `
+  precision highp float;
+  varying vec2 vUv;
+  void main() {
+    float r = length((vUv - 0.5) * vec2(1.0, 1.6)) * 2.0;
+    gl_FragColor = vec4(0.0, 0.0, 0.0, pow(smoothstep(1.0, 0.0, r), 1.6) * 0.75);
+  }
+`;
+// a faint shaft of light from above: brightest at the core, fading at the edges and both ends
+const SHAFT_VERT = /* glsl */ `
+  varying vec2 vUv;
+  varying float vFace;
+  void main() {
+    vUv = uv;
+    vec3 n = normalize(normalMatrix * normal);
+    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    vFace = abs(dot(n, normalize(-mv.xyz)));
+    gl_Position = projectionMatrix * mv;
+  }
+`;
+const SHAFT_FRAG = /* glsl */ `
+  precision highp float;
+  uniform vec3 uColor;
+  uniform float uTime;
+  varying vec2 vUv;
+  varying float vFace;
+  void main() {
+    float along = smoothstep(0.0, 0.25, vUv.y) * smoothstep(1.0, 0.55, vUv.y);
+    float core = pow(vFace, 2.5);
+    float flicker = 0.9 + 0.1 * sin(uTime * 2.1 + vUv.y * 6.0);
+    vec3 c = mix(vec3(1.0, 0.96, 0.9), uColor, 0.45) * along * core * 0.075 * flicker;
+    gl_FragColor = vec4(c, max(c.r, max(c.g, c.b)));
   }
 `;
 const UV_VERT = /* glsl */ `
@@ -164,25 +218,70 @@ export function initFighters({ canvas, fighters, lite, reduced }) {
     });
   }
 
-  // ground disc
-  const discU = { uColor: { value: color }, uTime: { value: 0 } };
-  const disc = new THREE.Mesh(
-    new THREE.PlaneGeometry(7.5, 7.5),
+  // ---- the stand: a dark metal plinth with a lit rim, contact shadow, floor glow and a light shaft ----
+  const FLOOR = -H / 2;
+  const PED_H = 0.26;
+  const additive = (uniforms, vertexShader, fragmentShader, extra = {}) =>
     new THREE.ShaderMaterial({
-      uniforms: discU,
-      vertexShader: UV_VERT,
-      fragmentShader: DISC_FRAG,
+      uniforms,
+      vertexShader,
+      fragmentShader,
       blending: THREE.CustomBlending,
       blendSrc: THREE.OneFactor,
       blendDst: THREE.OneFactor,
       transparent: true,
       depthWrite: false,
       toneMapped: false,
-    })
+      ...extra,
+    });
+  const discU = { uColor: { value: color }, uTime: { value: 0 } };
+  const plinth = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.5, 1.62, PED_H, 96, 1),
+    new THREE.MeshStandardMaterial({ color: 0x0c0a10, metalness: 0.9, roughness: 0.38, envMapIntensity: 0.35 })
   );
+  plinth.position.y = FLOOR - PED_H / 2;
+  rig.add(plinth);
+  const cap = new THREE.Mesh(
+    new THREE.CircleGeometry(1.5, 96),
+    new THREE.ShaderMaterial({ uniforms: discU, vertexShader: UV_VERT, fragmentShader: CAP_FRAG, toneMapped: false })
+  );
+  cap.rotation.x = -Math.PI / 2;
+  cap.position.y = FLOOR + 0.001;
+  rig.add(cap);
+
+  const rimMat = new THREE.MeshBasicMaterial({ color, toneMapped: false });
+  const rimTop = new THREE.Mesh(new THREE.TorusGeometry(1.5, 0.012, 8, 160), rimMat);
+  rimTop.rotation.x = Math.PI / 2;
+  rimTop.position.y = FLOOR + 0.004;
+  rig.add(rimTop);
+  const rimLow = new THREE.Mesh(new THREE.TorusGeometry(1.62, 0.006, 8, 160), new THREE.MeshBasicMaterial({ color, toneMapped: false, transparent: true, opacity: 0.45 }));
+  rimLow.rotation.x = Math.PI / 2;
+  rimLow.position.y = FLOOR - PED_H;
+  rig.add(rimLow);
+  // share the one animated colour instance so the rims follow fighter switches
+  rimMat.color = color;
+  rimLow.material.color = color;
+
+  const shadow = new THREE.Mesh(
+    new THREE.PlaneGeometry(2.2, 2.2),
+    new THREE.ShaderMaterial({ vertexShader: UV_VERT, fragmentShader: SHADOW_FRAG, transparent: true, depthWrite: false })
+  );
+  shadow.rotation.x = -Math.PI / 2;
+  shadow.position.y = FLOOR + 0.006;
+  rig.add(shadow);
+
+  const disc = new THREE.Mesh(new THREE.PlaneGeometry(9, 9), additive(discU, UV_VERT, DISC_FRAG));
   disc.rotation.x = -Math.PI / 2;
-  disc.position.y = -H / 2 + 0.02;
+  disc.position.y = FLOOR - PED_H - 0.01;
   rig.add(disc);
+
+  const SHAFT_LEN = 8;
+  const shaft = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.55, 1.75, SHAFT_LEN, 64, 1, true),
+    additive(discU, SHAFT_VERT, SHAFT_FRAG, { side: THREE.DoubleSide })
+  );
+  shaft.position.y = FLOOR + SHAFT_LEN / 2;
+  rig.add(shaft);
 
   // dust
   const N = lite ? 120 : 300;
@@ -218,8 +317,9 @@ export function initFighters({ canvas, fighters, lite, reduced }) {
   let current = 0;
   let visible = false;
   let last = performance.now();
-  const state = { spin: -0.4, vel: 0, scroll: 0 };
-  const AUTO = reduced ? 0 : 0.5; // rad/s
+  const REST = -0.38; // front three-quarter, turned toward the copy on the left
+  const TAU = Math.PI * 2;
+  const state = { spin: REST, vel: 0, scroll: 0 };
   const mouse = new THREE.Vector2();
   const mouseS = new THREE.Vector2();
   let dragging = false;
@@ -239,8 +339,11 @@ export function initFighters({ canvas, fighters, lite, reduced }) {
       rig.scale.setScalar(Math.min(1, (visW * 1.05) / W, (visH * 0.56) / H));
       rig.position.set(0, visH * 0.2, 0);
     } else {
-      rig.scale.setScalar(Math.min(1.08, (visH * 0.9) / H));
-      rig.position.set(Math.min(visW * 0.2, 2.6), -0.05, 0);
+      // leave room under the feet so the whole plinth sits in frame
+      const narrow = camera.aspect < 1.35;
+      const k = Math.min(1, (visH * (narrow ? 0.56 : 0.74)) / H);
+      rig.scale.setScalar(k);
+      rig.position.set(narrow ? visW * 0.27 : Math.min(visW * 0.2, 2.6), visH * (narrow ? 0.05 : 0.035), 0);
     }
   }
 
@@ -251,9 +354,13 @@ export function initFighters({ canvas, fighters, lite, reduced }) {
     last = now;
     const t = (discU.uTime.value += reduced ? 0 : dt);
 
-    // full turntable: constant spin, plus whatever a drag threw in, easing back to the base rate
+    // hold a front three-quarter pose with a slow sway; after a drag or an entrance spin,
+    // spring back to the nearest front-facing angle so we never sit on a fighter's back
     if (!dragging) {
-      state.vel += (AUTO - state.vel) * Math.min(1, dt * 1.6);
+      const sway = reduced ? 0 : Math.sin(t * 0.32) * 0.22;
+      const base = REST + sway;
+      const target = base + TAU * Math.round((state.spin - base) / TAU);
+      state.vel += ((target - state.spin) * 14 - state.vel * 6.5) * dt;
       state.spin += state.vel * dt;
     }
     mixers[current]?.mixer.update(dt);
@@ -299,6 +406,10 @@ export function initFighters({ canvas, fighters, lite, reduced }) {
       current = i;
       const c = new THREE.Color(fighters[i].color);
       gsap.to(color, { r: c.r, g: c.g, b: c.b, duration: 0.8, onUpdate: () => lightColors.forEach((l) => l.copy(color)) });
+      const g = fighters[i].glow ?? 1;
+      gsap.to(rimL, { intensity: 2.2 * g, duration: 0.8 });
+      gsap.to(rimR, { intensity: 1.2 * g, duration: 0.8 });
+      gsap.to(under, { intensity: 6 * g, duration: 0.8 });
       models.forEach((m, k) => {
         if (!m) return;
         gsap.killTweensOf(m.scale);
@@ -309,8 +420,8 @@ export function initFighters({ canvas, fighters, lite, reduced }) {
         if (!to || current !== i) return;
         to.visible = true;
         if (reduced) return to.scale.setScalar(1);
-        state.spin = -0.5; // enter facing the camera
-        state.vel = dir * 3;
+        state.spin = REST - dir * 1.4; // swing in and settle facing the camera
+        state.vel = dir * 4;
         mixers[current]?.strike();
         gsap.fromTo(to.scale, { x: 0.6, y: 0.6, z: 0.6 }, { x: 1, y: 1, z: 1, duration: 0.9, ease: 'expo.out' });
       };
@@ -318,7 +429,7 @@ export function initFighters({ canvas, fighters, lite, reduced }) {
         if (from) from.visible = false;
         return show();
       }
-      state.vel = dir * 8;
+      state.vel = dir * 10;
       gsap.to(from.scale, {
         x: 0.001,
         y: 0.001,

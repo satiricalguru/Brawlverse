@@ -1,0 +1,75 @@
+<!doctype html>
+<!-- Roster lineup card for the README and social preview. Render with tools/capture-lineup.mjs. -->
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  @font-face { font-family: 'Clash Display'; src: url('../public/fonts/ClashDisplay-Bold.woff2') format('woff2'); font-weight: 700; }
+  @font-face { font-family: 'General Sans'; src: url('../public/fonts/GeneralSans-Medium.woff2') format('woff2'); font-weight: 500; }
+  * { margin: 0; box-sizing: border-box; }
+  html, body { width: 2400px; height: 1120px; background: #07060b; overflow: hidden; }
+  .stage {
+    position: relative; width: 100%; height: 100%;
+    background:
+      radial-gradient(70% 60% at 50% 38%, rgba(70, 40, 110, 0.35), transparent 70%),
+      radial-gradient(120% 60% at 50% 100%, rgba(255, 120, 60, 0.07), transparent 60%),
+      linear-gradient(180deg, #0c0a14 0%, #07060b 62%, #050409 100%);
+  }
+  /* floor horizon */
+  .floor { position: absolute; left: 0; right: 0; top: 850px; bottom: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent 30%); }
+  .floor::before { content: ''; position: absolute; left: 6%; right: 6%; top: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(246,241,233,0.18), transparent); }
+  .brand { position: absolute; left: 0; right: 0; top: 70px; text-align: center; color: #f6f1e9; }
+  .brand .row { display: inline-flex; align-items: center; gap: 22px; }
+  .brand svg { width: 64px; height: 64px; }
+  .brand b { font: 700 54px/1 'Clash Display', sans-serif; letter-spacing: 0.24em; }
+  .brand p { margin-top: 18px; font: 500 22px/1 'General Sans', sans-serif; letter-spacing: 0.42em; text-transform: uppercase; color: rgba(246,241,233,0.55); }
+  .fighters { position: absolute; left: 0; right: 0; bottom: 270px; display: flex; justify-content: center; gap: 30px; }
+  .f { position: relative; width: 520px; height: 700px; --c: #fff; }
+  /* light shaft from above */
+  .f::before { content: ''; position: absolute; left: 50%; bottom: 10px; width: 520px; height: 820px; transform: translateX(-50%);
+    background: radial-gradient(40% 60% at 50% 0%, color-mix(in srgb, var(--c) 18%, transparent), transparent 70%),
+                linear-gradient(180deg, transparent, color-mix(in srgb, var(--c) 7%, transparent));
+    clip-path: polygon(38% 0, 62% 0, 92% 100%, 8% 100%); filter: blur(10px); }
+  /* glowing plinth rim + floor pool */
+  .f .pool { position: absolute; left: 50%; bottom: -46px; width: 470px; height: 110px; transform: translateX(-50%);
+    border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--c) 45%, transparent), transparent);
+    filter: blur(14px); }
+  .f .rim { position: absolute; left: 50%; bottom: -26px; width: 330px; height: 64px; transform: translateX(-50%);
+    border-radius: 50%; border: 2px solid var(--c); box-shadow: 0 0 22px var(--c), inset 0 0 18px color-mix(in srgb, var(--c) 50%, transparent);
+    background: radial-gradient(closest-side, rgba(0,0,0,0.75), rgba(10,8,14,0.9) 70%, transparent); }
+  .f img { position: absolute; left: 50%; bottom: 0; height: 100%; transform: translateX(-50%);
+    filter: drop-shadow(0 0 1px rgba(255,255,255,0.15)) drop-shadow(-10px 0 22px color-mix(in srgb, var(--c) 35%, transparent)); }
+  /* reflection on the glossy floor */
+  .f .refl { position: absolute; left: 50%; top: calc(100% + 4px); bottom: auto; height: 100%; transform: translateX(-50%) scaleY(-1); transform-origin: 50% 50%;
+    opacity: 0.22; filter: blur(2px); -webkit-mask-image: linear-gradient(0deg, rgba(0,0,0,0.9), transparent 38%); mask-image: linear-gradient(0deg, rgba(0,0,0,0.9), transparent 38%); }
+  .f .tag { position: absolute; left: 0; right: 0; bottom: -170px; z-index: 2; text-align: center; color: #f6f1e9; }
+  .f .tag b { display: block; font: 700 46px/1 'Clash Display', sans-serif; letter-spacing: 0.08em; text-transform: uppercase; }
+  .f .tag span { display: block; margin-top: 12px; font: 500 17px/1 'General Sans', sans-serif; letter-spacing: 0.3em; text-transform: uppercase; color: var(--c); }
+  .vignette { position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0,0,0,0.65)); pointer-events: none; }
+  .grain { position: absolute; inset: 0; opacity: 0.06; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>"); }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="floor"></div>
+  <div class="brand">
+    <div class="row">
+      <svg viewBox="0 0 32 32"><g transform="skewX(-12) translate(3.4 0)"><path fill="#f6f1e9" d="M5 4h6v24H5z"/><path fill="#f6f1e9" d="M13 4h6l6 5.75-6 5.75h-6z"/><path fill="#ffb86b" d="M13 16.5h7l7 5.75-7 5.75h-7z"/></g></svg>
+      <b>BRAWLVERSE</b>
+    </div>
+    <p>Choose your fighter</p>
+  </div>
+  <div class="fighters">
+    <div class="f" style="--c:#ff6a2b"><div class="pool"></div><div class="rim"></div><img class="refl" src="../public/media/fighter_kael_cut.webp" alt=""><img src="../public/media/fighter_kael_cut.webp" alt=""><div class="tag"><b>Kael</b><span>Bruiser</span></div></div>
+    <div class="f" style="--c:#39d5ff"><div class="pool"></div><div class="rim"></div><img class="refl" src="../public/media/fighter_nyx_cut.webp" alt=""><img src="../public/media/fighter_nyx_cut.webp" alt=""><div class="tag"><b>Nyx</b><span>Duelist</span></div></div>
+    <div class="f" style="--c:#4dff9a"><div class="pool"></div><div class="rim"></div><img class="refl" src="../public/media/fighter_bramm_cut.webp" alt=""><img src="../public/media/fighter_bramm_cut.webp" alt=""><div class="tag"><b>Bramm</b><span>Heavyweight</span></div></div>
+    <div class="f" style="--c:#c77dff"><div class="pool"></div><div class="rim"></div><img class="refl" src="../public/media/fighter_zephra_cut.webp" alt=""><img src="../public/media/fighter_zephra_cut.webp" alt=""><div class="tag"><b>Zephra</b><span>Acrobat</span></div></div>
+  </div>
+  <div class="vignette"></div>
+  <div class="grain"></div>
+</div>
+</body>
+</html>
