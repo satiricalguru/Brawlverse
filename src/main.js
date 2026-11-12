@@ -5,6 +5,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { initHero } from './hero.js';
 import { initStages } from './stages.js';
 import { initFighters } from './fighters3d.js';
+import { clamp01, smooth, sectionProgress, scrollToProgress, onScreen } from './util.js';
 
 gsap.registerPlugin(ScrollTrigger);
 document.documentElement.classList.add('js');
@@ -15,20 +16,6 @@ const FRAME_COUNT = 128;
 const HERO_V = 2;
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
-const clamp01 = (v) => Math.min(1, Math.max(0, v));
-const smooth = (a, b, v) => {
-  const t = clamp01((v - a) / (b - a));
-  return t * t * (3 - 2 * t);
-};
-// progress of a tall section with a sticky child: 0 when its top hits the viewport top, 1 when its bottom hits the bottom
-const sectionProgress = (el) => {
-  const r = el.getBoundingClientRect();
-  return clamp01(-r.top / Math.max(1, r.height - innerHeight));
-};
-const scrollToProgress = (el, p) => {
-  const top = el.getBoundingClientRect().top + scrollY;
-  window.scrollTo({ top: top + p * (el.offsetHeight - innerHeight), behavior: reduced ? 'auto' : 'smooth' });
-};
 
 /* ---------- nav ---------- */
 const nav = $('#nav');
@@ -235,7 +222,7 @@ function updateFighters() {
   fighterFx?.setScroll(0);
 }
 fEls.dots.forEach((b) =>
-  b.addEventListener('click', () => scrollToProgress(fightersEl, (+b.dataset.i + 0.5) / FIGHTERS.length))
+  b.addEventListener('click', () => scrollToProgress(fightersEl, (+b.dataset.i + 0.5) / FIGHTERS.length, reduced))
 );
 
 /* ---------- stages ---------- */
@@ -280,14 +267,10 @@ function updateStages() {
   stageBtns.forEach((b, k) => b.style.setProperty('--p', k < i ? 1 : k === i ? f - i : 0));
 }
 stageBtns.forEach((b) =>
-  b.addEventListener('click', () => scrollToProgress(stagesEl, (+b.dataset.i + 0.5) / STAGES.length))
+  b.addEventListener('click', () => scrollToProgress(stagesEl, (+b.dataset.i + 0.5) / STAGES.length, reduced))
 );
 
 /* ---------- one loop reads scroll and drives every pinned scene ---------- */
-const onScreen = (el) => {
-  const r = el.getBoundingClientRect();
-  return r.bottom > 0 && r.top < innerHeight;
-};
 let lastT = performance.now();
 function frame(now) {
   const dt = Math.min(0.05, (now - lastT) / 1000);
