@@ -963,6 +963,32 @@ button {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.03);
+  position: relative;
+  perspective: 300px;
+  transition: border-color 0.4s, box-shadow 0.4s;
+}
+/* flip-board tiles: a hinge line and a lit border while a character rolls */
+.room span::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.45);
+}
+.room span.is-flip {
+  border-color: color-mix(in srgb, var(--amber) 70%, transparent);
+  box-shadow: 0 0 18px -4px color-mix(in srgb, var(--amber) 60%, transparent);
+}
+.room i {
+  display: block;
+  font-style: normal;
+  backface-visibility: hidden;
+}
+.link b {
+  display: inline-block;
+  min-width: 5ch;
 }
 .link {
   margin-top: 22px;
@@ -1036,13 +1062,63 @@ button {
   gap: clamp(16px, 2.4vw, 40px);
 }
 .pipe article {
+  position: relative;
   padding-top: 22px;
   border-top: 1px solid var(--line);
+  cursor: default;
+}
+/* the active step: its line fills with light, a spark rides the leading edge */
+.pipe article::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: -1px;
+  height: 2px;
+  width: calc(var(--p, 0) * 100%);
+  background: var(--sun);
+  box-shadow: 0 0 14px rgba(255, 138, 76, 0.55);
+}
+.pipe article::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: calc(var(--p, 0) * 100% - 4px);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff3e2;
+  box-shadow: 0 0 10px 3px rgba(255, 184, 107, 0.8);
+  opacity: var(--spark, 0);
+}
+.pipe article.is-done::before {
+  background: color-mix(in srgb, var(--amber) 35%, transparent);
+  box-shadow: none;
 }
 .pipe span {
   font-size: 11px;
   letter-spacing: 0.2em;
   color: var(--mute);
+  transition: color 0.4s;
+}
+.pipe h3,
+.pipe p {
+  transition: color 0.5s, transform 0.6s var(--ease), opacity 0.5s;
+}
+.pipe.is-live article:not(.is-on) h3 {
+  opacity: 0.45;
+}
+.pipe article.is-on span {
+  color: var(--amber);
+}
+.pipe article.is-on h3 {
+  transform: translateY(-6px);
+  background: var(--sun);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.pipe article.is-on p {
+  color: var(--ink);
 }
 .pipe h3 {
   font-family: var(--display);

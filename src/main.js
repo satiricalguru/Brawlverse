@@ -437,3 +437,73 @@ $$('[data-fighter]').forEach((a) =>
     scrollToProgress(fightersEl, (+a.dataset.fighter + 0.5) / FIGHTERS.length);
   })
 );
+
+/* ---------- room code: a new code rolls in every second, the share link follows ---------- */
+{
+  const tiles = $$('.room span');
+  const linkCode = $('.link b');
+  const ABC = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O or 1/I/L lookalikes
+  const pick = () => ABC[(Math.random() * ABC.length) | 0];
+  tiles.forEach((t) => (t.innerHTML = `<i>${t.textContent}</i>`));
+  let timer = 0;
+  const roll = () => {
+    const code = tiles.map(pick);
+    tiles.forEach((t, k) => {
+      const ch = t.firstChild;
+      t.classList.add('is-flip');
+      gsap
+        .timeline({ delay: k * 0.07, onComplete: () => t.classList.remove('is-flip') })
+        .to(ch, { rotateX: -90, duration: 0.14, ease: 'power2.in' })
+        .add(() => (ch.textContent = code[k]))
+        .fromTo(ch, { rotateX: 90 }, { rotateX: 0, duration: 0.32, ease: 'back.out(2.4)' });
+    });
+    // the link scrambles through a few random strings and lands on the new code
+    let n = 0;
+    const scr = setInterval(() => {
+      linkCode.textContent = ++n < 5 ? tiles.map(pick).join('') : code.join('');
+      if (n >= 5) clearInterval(scr);
+    }, 55);
+  };
+  if (!reduced && tiles.length) {
+    new IntersectionObserver(([e]) => {
+      clearInterval(timer);
+      if (e.isIntersecting) timer = setInterval(roll, 1000);
+    }).observe($('.room'));
+  }
+}
+
+/* ---------- build pipeline: light runs through the four steps in turn ---------- */
+{
+  const pipe = $('.pipe');
+  const steps = $$('.pipe article');
+  let tl = null;
+  const build = () => {
+    tl = gsap.timeline({ repeat: -1, repeatDelay: 0.6 });
+    tl.add(() => steps.forEach((s) => s.classList.remove('is-on', 'is-done')));
+    tl.set(steps, { '--p': 0, '--spark': 0 });
+    steps.forEach((s, i) => {
+      tl.add(() => {
+        steps.forEach((o, k) => o.classList.toggle('is-on', k === i));
+        if (i) steps[i - 1].classList.add('is-done');
+      });
+      tl.set(s, { '--spark': 1 });
+      tl.to(s, { '--p': 1, duration: 1.7, ease: 'power1.inOut' });
+      tl.to(s, { '--spark': 0, duration: 0.25 }, '>-0.1');
+    });
+    tl.add(() => steps[steps.length - 1].classList.add('is-done'), '+=0.3');
+    tl.to(steps, { '--p': 0, duration: 0.5, ease: 'power2.in', stagger: 0.05 }, '+=0.8');
+  };
+  if (reduced) {
+    steps.forEach((s) => s.style.setProperty('--p', 1));
+  } else if (steps.length) {
+    pipe.classList.add('is-live');
+    build();
+    tl.pause();
+    ScrollTrigger.create({
+      trigger: pipe,
+      start: 'top 85%',
+      end: 'bottom top',
+      onToggle: (self) => (self.isActive ? tl.play() : tl.pause()),
+    });
+  }
+}
