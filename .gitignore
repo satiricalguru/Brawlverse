@@ -1,3 +1,12 @@
 .DS_Store
 node_modules/
 Plan/assets/
+dist/
+.vercel
+
+# large source masters (Flow/ChatGPT/Mixamo originals) and unused model sets
+media-src/
+public/models/*.glb
+public/models/relief/
+public/models/kaykit/
+.claude/settings.local.json

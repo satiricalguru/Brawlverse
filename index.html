@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Brawlverse — Every world. One arena.</title>
+    <meta
+      name="description"
+      content="Brawlverse is an original 3D platform brawler for the browser, built with Three.js. Pick a fighter, pick a world, send a link, and fight a friend."
+    />
+    <meta name="theme-color" content="#08060d" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preload" as="image" href="/media/hero_start.webp?v=2" />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/ClashDisplay-Bold.woff2" crossorigin />
+  </head>
+  <body>
+    <a class="skip" href="#fighters">Skip to content</a>
+    <div class="grain" aria-hidden="true"></div>
+
+    <header class="nav" id="nav">
+      <a class="nav__brand" href="#top" aria-label="Brawlverse home"><svg class="logo" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><rect x="1" y="1" width="30" height="30" rx="7" fill="currentColor"/><path fill="#08060d" d="M9 7h8.2c3.3 0 5.3 1.7 5.3 4.4 0 1.7-.8 3-2.2 3.7 1.9.6 3 2.1 3 4.2 0 3-2.2 4.9-5.8 4.9H9zm3.9 3.2v3.6h3.7c1.3 0 2-.7 2-1.8s-.7-1.8-2-1.8zm0 6.6v4.2h4.2c1.5 0 2.3-.8 2.3-2.1s-.8-2.1-2.3-2.1z"/><path fill="#08060d" d="M22.5 6l2.5 0-9.5 20h-2.500z" opacity="0"/></svg><span>BRAWLVERSE</span></a>
+      <nav class="nav__links" aria-label="Primary">
+        <a href="#fighters">Fighters</a>
+        <a href="#stages">Stages</a>
+        <a href="#friend">Multiplayer</a>
+        <a href="#build">The build</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <a class="stars" id="gh" href="https://github.com/satiricalguru/Brawlverse" target="_blank" rel="noopener" aria-label="Star Brawlverse on GitHub">
+        <svg class="gh-mark" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2.1c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.56-.29-5.25-1.28-5.25-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.78 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.43-2.7 5.4-5.27 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg>
+        <svg class="star" viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M12 3.2l2.7 5.7 6.1.8-4.5 4.3 1.2 6.1L12 17.1l-5.5 3 1.2-6.1-4.500-4.300 6.100-.800z"/></svg>
+        <b id="gh-stars" hidden></b>
+      </a>
+    </header>
+
+    <main id="top">
+      <!-- HERO: scroll-scrubbed cinematic -->
+      <section class="hero" id="hero" aria-label="Brawlverse reveal">
+        <div class="hero__sticky">
+          <canvas class="hero__canvas" id="hero-canvas" aria-hidden="true"></canvas>
+          <div class="hero__shade" id="hero-shade" aria-hidden="true"></div>
+          <div class="hero__bars" id="hero-bars" aria-hidden="true"></div>
+
+          <div class="hero__title" id="hero-title">
+            <p class="label">A 3D brawler for the browser · <b>In development</b></p>
+            <h1 class="wordmark" id="wordmark" aria-label="Brawlverse">Brawlverse</h1>
+            <p class="hero__tag">Every world. <span class="sun">One arena.</span></p>
+            <div class="hero__cta">
+              <a class="btn" href="#fighters">Meet the fighters</a>
+              <a class="btn btn--line" href="#stages">Tour the stages</a>
+            </div>
+          </div>
+
+          <div class="beat" data-in="0.2" data-out="0.38">
+            <span class="label">The arena wakes</span>
+            <h2>Every world <span class="sun">collides.</span></h2>
+          </div>
+          <div class="beat beat--r" data-in="0.42" data-out="0.6">
+            <span class="label">Damage builds. Launches get longer.</span>
+            <h2>Knock them <span class="sun">off the edge.</span></h2>
+          </div>
+          <div class="beat" data-in="0.64" data-out="0.82">
+            <span class="label">No install. No download.</span>
+            <h2>Just send <span class="sun">a link.</span></h2>
+          </div>
+          <div class="beat beat--c" data-in="0.92" data-out="2" aria-hidden="true">
+            <h2><span class="k">Kael</span><i>VS</i><span class="n">Nyx</span></h2>
+          </div>
+
+          <div class="hero__hud" aria-hidden="true">
+            <span id="hero-count">00</span>
+            <div class="hero__bar"><i id="hero-bar"></i></div>
+            <span class="cue">Scroll</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- STATEMENT -->
+      <section class="intro" id="intro">
+        <span class="label">What it is</span>
+        <p class="big" id="statement">
+          Brawlverse is a platform brawler that lives in a browser tab. Four fighters from four colliding worlds, one
+          floating arena, and a single rule: be the last one standing on it.
+        </p>
+        <dl class="intro__meta">
+          <div><dt>4</dt><dd>Fighters at launch</dd></div>
+          <div><dt>4</dt><dd>Stages at launch</dd></div>
+          <div><dt>0</dt><dd>Things to install</dd></div>
+        </dl>
+      </section>
+
+      <!-- FIGHTERS: one Three.js stage, scroll or drag -->
+      <section class="fighters" id="fighters" aria-label="Fighters">
+        <div class="fighters__sticky" id="fighters-sticky">
+          <div class="fighters__ghost" id="fighter-ghost" aria-hidden="true">Kael</div>
+          <canvas class="fighters__canvas" id="fighters-canvas" aria-hidden="true"></canvas>
+          <img class="fighters__fallback" id="fighter-fallback" src="/media/fighter_kael.webp" alt="" />
+
+          <header class="fighters__head">
+            <span class="label">Choose your fighter</span>
+            <span class="fighters__count"><b id="fighter-no">01</b> / 04</span>
+          </header>
+
+          <div class="fighters__info" aria-live="polite">
+            <p class="label fighters__role" id="fighter-role">Bruiser · Cinder Forge</p>
+            <h2 class="fighters__name" id="fighter-name">Kael</h2>
+            <p class="fighters__desc" id="fighter-desc"></p>
+            <dl class="stats" id="fighter-stats">
+              <div><dt>Power</dt><dd></dd><span></span></div>
+              <div><dt>Speed</dt><dd></dd><span></span></div>
+              <div><dt>Reach</dt><dd></dd><span></span></div>
+            </dl>
+          </div>
+
+          <ol class="fighters__dots" id="fighter-dots">
+            <li><button type="button" data-i="0">Kael</button></li>
+            <li><button type="button" data-i="1">Nyx</button></li>
+            <li><button type="button" data-i="2">Bramm</button></li>
+            <li><button type="button" data-i="3">Zephra</button></li>
+          </ol>
+          <span class="fighters__hint" aria-hidden="true">Drag to turn</span>
+        </div>
+      </section>
+
+      <!-- STAGES -->
+      <section class="stages" id="stages" aria-label="Stages">
+        <div class="stages__sticky">
+          <canvas class="stages__canvas" id="stages-canvas" aria-hidden="true"></canvas>
+          <div class="stages__shade" aria-hidden="true"></div>
+
+          <header class="stages__head">
+            <span class="label">Pick your battleground</span>
+            <span class="fighters__count"><b id="stage-idx" style="color: var(--ink)">01</b> / 04</span>
+          </header>
+
+          <div class="stages__name" aria-live="polite">
+            <h3 id="stage-name">Cinder Forge</h3>
+            <p id="stage-desc"></p>
+          </div>
+
+          <ol class="stages__list" id="stages-list">
+            <li><button type="button" data-i="0"><i>01</i><span>Cinder Forge</span></button></li>
+            <li><button type="button" data-i="1"><i>02</i><span>Neon Abyss</span></button></li>
+            <li><button type="button" data-i="2"><i>03</i><span>Sunken Colosseum</span></button></li>
+            <li><button type="button" data-i="3"><i>04</i><span>Frostspire Summit</span></button></li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- PLAY WITH A FRIEND -->
+      <section class="friend" id="friend">
+        <div class="friend__left">
+          <span class="label">Play with a friend · Planned</span>
+          <h2 class="h2">Send a link.<br /><span class="sun">Settle it.</span></h2>
+          <p class="lede">
+            The first mode we're building: a room code, a direct peer-to-peer connection, and rollback netcode so hits
+            land when you press the button.
+          </p>
+        </div>
+        <ol class="steps">
+          <li class="step">
+            <div>
+              <h3>Open a room</h3>
+              <p>One click creates a private room and a short code.</p>
+              <div class="room" aria-hidden="true"><span>R</span><span>7</span><span>K</span><span>Q</span><span>2</span></div>
+            </div>
+          </li>
+          <li class="step">
+            <div>
+              <h3>Share the link</h3>
+              <p>Your friend opens it in any modern browser. Nothing to install.</p>
+              <div class="link" aria-hidden="true">your-game-link/r/<b>R7KQ2</b></div>
+            </div>
+          </li>
+          <li class="step">
+            <div>
+              <h3>Fight</h3>
+              <p>Inputs sync directly between the two of you. One keyboard works too, for couch matches.</p>
+              <div class="ping" aria-hidden="true"><i></i><u></u><i></i><span>Peer to peer</span></div>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <!-- BUILD -->
+      <section class="build" id="build">
+        <div class="build__head">
+          <div>
+            <span class="label">The build</span>
+            <h2 class="h2">Sketch to <span class="sun">stock.</span></h2>
+          </div>
+          <p class="lede">Every fighter and stage goes through the same four steps before it reaches the arena.</p>
+        </div>
+        <div class="pipe">
+          <article><span>01</span><h3>Concept</h3><p>Fighter and stage key art sets the look for every world.</p></article>
+          <article><span>02</span><h3>Model</h3><p>Base meshes from Tripo, then cleaned, rigged and lit in Blender.</p></article>
+          <article><span>03</span><h3>Engine</h3><p>A Three.js runtime with fixed-step combat and a dynamic camera.</p></article>
+          <article><span>04</span><h3>Cinematics</h3><p>Reveal footage like the opening, generated with Google Flow.</p></article>
+        </div>
+      </section>
+
+      <!-- FAQ -->
+      <section class="faq" id="faq">
+        <div class="faq__left">
+          <span class="label">Questions</span>
+          <h2 class="h2">Before you <span class="sun">ask.</span></h2>
+        </div>
+        <div class="faq__list">
+          <details open>
+            <summary>Can I play Brawlverse right now?</summary>
+            <p>Not yet. This page is the first thing we've shipped. The playable build is in development, and the GitHub repository is where it will appear first.</p>
+          </details>
+          <details>
+            <summary>What kind of game is it?</summary>
+            <p>A platform brawler. Hits raise your opponent's damage, higher damage means longer launches, and you take a stock by knocking them off the stage. Last fighter with stocks left wins.</p>
+          </details>
+          <details>
+            <summary>What will I need to play?</summary>
+            <p>A modern desktop browser with WebGL. There is nothing to install. The plan is keyboard and gamepad support; phones are not a launch target.</p>
+          </details>
+          <details>
+            <summary>How will playing with a friend work?</summary>
+            <p>You open a room, send the link, and your friend joins from their browser. The match runs peer to peer with rollback netcode, so it stays responsive without a game server in the middle. Two players on one keyboard is planned too.</p>
+          </details>
+          <details>
+            <summary>Is this based on an existing game?</summary>
+            <p>No. The genre is familiar, but every fighter, stage, name and piece of art here is original to Brawlverse.</p>
+          </details>
+          <details>
+            <summary>How were the visuals on this page made?</summary>
+            <p>The key art and the opening and closing footage were generated with Google Flow. The fighter and stage scenes are rendered live in your browser with Three.js, using depth maps to give the art real geometry.</p>
+          </details>
+          <details>
+            <summary>Who is building it, and can I follow along?</summary>
+            <p>It's an independent project built in the open. Star or watch the repository on GitHub to see progress as it lands.</p>
+          </details>
+        </div>
+      </section>
+
+      <!-- CTA -->
+      <section class="cta" id="cta">
+        <video class="cta__video" id="cta-video" muted loop playsinline preload="none" poster="/media/arena_morning.webp" aria-hidden="true">
+          <source src="/media/arena_morning.mp4" type="video/mp4" />
+        </video>
+        <div class="cta__bg" aria-hidden="true"></div>
+        <span class="label">Built in the open</span>
+        <h2 class="cta__title">The arena<br /><span class="sun">opens soon.</span></h2>
+        <p class="lede">Morning over the arena. Watch the repository to see the first playable build land.</p>
+        <a class="btn" href="https://github.com/satiricalguru/Brawlverse" target="_blank" rel="noopener">Follow on GitHub</a>
+        <button class="cta__toggle" id="cta-toggle" type="button" aria-pressed="false">Pause video</button>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="foot__top">
+        <div class="foot__brand">
+          <a class="nav__brand" href="#top"><svg class="logo" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><rect x="1" y="1" width="30" height="30" rx="7" fill="currentColor"/><path fill="#08060d" d="M9 7h8.2c3.3 0 5.3 1.7 5.3 4.4 0 1.7-.8 3-2.2 3.7 1.9.6 3 2.1 3 4.2 0 3-2.2 4.9-5.8 4.9H9zm3.9 3.2v3.6h3.7c1.3 0 2-.7 2-1.8s-.7-1.8-2-1.8zm0 6.6v4.2h4.2c1.5 0 2.3-.8 2.3-2.1s-.8-2.1-2.3-2.1z"/><path fill="#08060d" d="M22.5 6l2.5 0-9.5 20h-2.500z" opacity="0"/></svg><span>BRAWLVERSE</span></a>
+          <p>An original 3D platform brawler for the browser. Every world. One arena.</p>
+          <span class="foot__status"><i></i>In development</span>
+        </div>
+        <nav class="foot__col" aria-label="Explore">
+          <h3>Explore</h3>
+          <a href="#fighters">Fighters</a>
+          <a href="#stages">Stages</a>
+          <a href="#friend">Multiplayer</a>
+          <a href="#build">The build</a>
+          <a href="#faq">FAQ</a>
+        </nav>
+        <nav class="foot__col" aria-label="Roster">
+          <h3>Roster</h3>
+          <a href="#fighters" data-fighter="0">Kael</a>
+          <a href="#fighters" data-fighter="1">Nyx</a>
+          <a href="#fighters" data-fighter="2">Bramm</a>
+          <a href="#fighters" data-fighter="3">Zephra</a>
+        </nav>
+        <nav class="foot__col" aria-label="Project">
+          <h3>Project</h3>
+          <a href="https://github.com/satiricalguru/Brawlverse" target="_blank" rel="noopener">GitHub repository</a>
+          <a href="https://github.com/satiricalguru/Brawlverse/issues" target="_blank" rel="noopener">Report an issue</a>
+          <a href="https://github.com/satiricalguru/Brawlverse/commits" target="_blank" rel="noopener">Changelog</a>
+        </nav>
+        <div class="foot__col">
+          <h3>Made with</h3>
+          <span>Three.js</span>
+          <span>Blender</span>
+          <span>Tripo</span>
+          <span>Google Flow</span>
+        </div>
+      </div>
+      <div class="foot__mark" aria-hidden="true">Brawlverse</div>
+      <div class="foot__base">
+        <span>© 2026 Brawlverse. Original characters and stages.</span>
+        <span>Imagery and video generated with Google Flow.</span>
+        <a href="#top">Back to top ↑</a>
+      </div>
+    </footer>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

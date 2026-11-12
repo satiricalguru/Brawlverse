@@ -1,0 +1,7 @@
+Plan
+media-src
+node_modules
+dist
+public/models/*.glb
+public/models/relief
+public/models/kaykit
