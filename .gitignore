@@ -1,6 +1,8 @@
 .DS_Store
 node_modules/
-Plan/assets/
+Plan/
+plan.md
+Final plan.md
 dist/
 .vercel
 
