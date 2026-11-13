@@ -5,6 +5,7 @@ import './style.css';
 import { createState, step, hash, FPS, FIGHTERS, ACT, ACT_NAMES } from './sim/sim.js';
 import { createInput } from './input.js';
 import { createView } from './view/view.js';
+import { createAudio } from './audio.js';
 
 const STEP_MS = 1000 / FPS;
 const MAX_STEPS = 4; // after a long stall, catch up at most this many frames per draw
@@ -12,9 +13,10 @@ const MAX_STEPS = 4; // after a long stall, catch up at most this many frames pe
 const $ = (s) => document.querySelector(s);
 const canvas = $('#game');
 
+const audio = createAudio();
 let view;
 try {
-  view = createView(canvas);
+  view = createView(canvas, { audio });
 } catch (err) {
   document.body.classList.add('no-gl');
   $('#banner').textContent = 'This browser could not start WebGL.';
@@ -111,6 +113,7 @@ window.addEventListener('keydown', (e) => {
   if (e.repeat) return;
   if (e.code === 'Escape') setPaused(!paused);
   else if (e.code === 'KeyR' && (paused || state.over)) restart();
+  else if (e.code === 'KeyM') flash(audio.toggleMute() ? 'Sound off' : 'Sound on', 900);
   else if (e.code === 'Backquote') {
     view.setDebug(!view.debug);
     $('#debug').hidden = !view.debug;
@@ -176,6 +179,26 @@ function frame(now) {
   drawHud();
   checkEnd();
   drawDebug(now);
+}
+
+// dev only (stripped from production builds): drive the game from the console or tests
+if (import.meta.env.DEV) {
+  window.__bv = {
+    get state() {
+      return state;
+    },
+    // run n frames with fixed inputs, then draw once
+    run(n = 1, inputs = [0, 0]) {
+      for (let i = 0; i < n; i++) step(state, inputs);
+      view.render(state);
+      return state.fighters.map((f) => `${ACT_NAMES[f.action]} af${f.af} x${(f.x / 256) | 0} y${(f.y / 256) | 0} ${f.damage}%`);
+    },
+    pause(on = true) {
+      setPaused(on);
+    },
+    restart,
+    view,
+  };
 }
 
 window.addEventListener('gamepadconnected', (e) => flash(`Gamepad ${e.gamepad.index + 1} connected`, 1400));
