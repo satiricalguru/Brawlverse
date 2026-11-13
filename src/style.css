@@ -1178,6 +1178,12 @@ button {
   height: 100%;
   object-fit: cover;
 }
+.cta__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
 .cta__toggle {
   position: absolute;
   right: var(--gut);
@@ -1193,6 +1199,20 @@ button {
 }
 .cta__toggle:hover {
   color: var(--ink);
+}
+
+/* ---------- play button in the nav ---------- */
+.nav__play {
+  margin-left: auto;
+  margin-right: -6px;
+}
+.nav:has(.nav__play) .nav__links {
+  margin-left: auto;
+}
+@media (max-width: 560px) {
+  .nav__play {
+    padding: 0 14px;
+  }
 }
 
 /* ---------- github stars ---------- */
