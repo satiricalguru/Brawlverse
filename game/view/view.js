@@ -7,12 +7,12 @@ import { ACT, FIGHTERS, STAGES, SUB, SHIELD_MAX, activeHitboxes, heightOf, intan
 import { loadFighterModel } from './model.js';
 import { buildStage } from './stages.js';
 
-// rigged models per fighter, and their moves file (null until that fighter's clips exist: Idle only)
+// rigged models per fighter, and their moves file (skeleton-only clips, bound by bone name)
 const MODELS = {
   Kael: ['/models/mixamo/kael.glb', '/models/mixamo/kael_moves.glb'],
-  Nyx: ['/models/mixamo/nyx.glb', null],
-  Bramm: ['/models/mixamo/bramm.glb', null],
-  Zephra: ['/models/mixamo/zephra.glb', null],
+  Nyx: ['/models/mixamo/nyx.glb', '/models/mixamo/nyx_moves.glb'],
+  Bramm: ['/models/mixamo/bramm.glb', '/models/mixamo/bramm_moves.glb'],
+  Zephra: ['/models/mixamo/zephra.glb', '/models/mixamo/zephra_moves.glb'],
 };
 const HEAVY = new Set(['fsmash', 'usmash', 'dsmash', 'fair', 'bair', 'dair']);
 
