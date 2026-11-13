@@ -33,7 +33,7 @@ try:
     scn.eevee.use_raytracing = True
     scn.eevee.taa_render_samples = 96
 except Exception:
-    pass
+    pass  # older/newer EEVEE builds lack these settings; the defaults render fine
 
 world = bpy.data.worlds.new('w')
 world.use_nodes = True

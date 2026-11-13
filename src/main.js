@@ -5,7 +5,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { initHero } from './hero.js';
 import { initStages } from './stages.js';
 import { initFighters } from './fighters3d.js';
-import { clamp01, smooth, sectionProgress, scrollToProgress, onScreen } from './util.js';
+import { clamp01, smooth, sectionProgress, scrollToProgress, onScreen, textEl } from './util.js';
 
 gsap.registerPlugin(ScrollTrigger);
 document.documentElement.classList.add('js');
@@ -48,7 +48,7 @@ const heroCount = $('#hero-count');
 const beats = $$('.beat').map((el) => ({ el, a: +el.dataset.in, b: +el.dataset.out }));
 
 const wordmark = $('#wordmark');
-wordmark.innerHTML = [...wordmark.textContent.trim()].map((c) => `<span aria-hidden="true">${c}</span>`).join('');
+wordmark.replaceChildren(...[...wordmark.textContent.trim()].map((c) => textEl('span', '', c, { 'aria-hidden': 'true' })));
 // once the letters have landed, the title takes a pointer-following colour light
 const lightWordmark = () => {
   gsap.set('#wordmark span', { clearProps: 'transform' });
@@ -110,11 +110,12 @@ function updateHero(dt) {
 
 /* ---------- statement: words light up as you read ---------- */
 const statement = $('#statement');
-statement.innerHTML = statement.textContent
-  .trim()
-  .split(/\s+/)
-  .map((w) => `<span class="w">${w}</span>`)
-  .join(' ');
+statement.replaceChildren(
+  ...statement.textContent
+    .trim()
+    .split(/\s+/)
+    .flatMap((w, i) => (i ? [' ', textEl('span', 'w', w)] : [textEl('span', 'w', w)]))
+);
 const words = $$('.w', statement);
 function updateStatement() {
   const r = statement.getBoundingClientRect();
@@ -346,8 +347,10 @@ function showStars(n) {
 {
   const mark = $('.foot__mark');
   const word = mark.textContent.trim();
-  const letters = (cls) => [...word].map((ch) => `<span class="${cls}">${ch}</span>`).join('');
-  mark.innerHTML = `${letters('ch')}<span class="foot__glow">${letters('')}</span>`;
+  const letters = (cls) => [...word].map((ch) => textEl('span', cls, ch));
+  const glow = textEl('span', 'foot__glow');
+  glow.append(...letters(''));
+  mark.replaceChildren(...letters('ch'), glow);
   mark.classList.add('is-split');
   const chars = mark.querySelectorAll('.ch');
   if (reduced) {
@@ -427,7 +430,7 @@ $$('[data-fighter]').forEach((a) =>
   const linkCode = $('.link b');
   const ABC = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O or 1/I/L lookalikes
   const pick = () => ABC[(Math.random() * ABC.length) | 0];
-  tiles.forEach((t) => (t.innerHTML = `<i>${t.textContent}</i>`));
+  tiles.forEach((t) => t.replaceChildren(textEl('i', '', t.textContent)));
   let timer = 0;
   const roll = () => {
     const code = tiles.map(pick);

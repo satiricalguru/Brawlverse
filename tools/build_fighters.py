@@ -70,7 +70,7 @@ for name in ["kael", "nyx", "bramm", "zephra"]:
                 try:
                     setl(bm.faces.new([V(vf, b, front[b]), V(vf, a, front[a]), V(vb, a, back[a]), V(vb, b, back[b])]), 0.6)
                 except ValueError:
-                    pass
+                    pass  # the face already exists (shared edge), nothing to add
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
     for _ in range(2):
         bmesh.ops.smooth_vert(bm, verts=bm.verts, factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)

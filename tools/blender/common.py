@@ -240,7 +240,6 @@ def loft(name, pts, rads, mat, segs=16, res=3, ref=(1, 0, 0), power=2.0, caps=(T
 def surface(name, fn, nu, nv, mat, solid=None, sub=1, closed_u=False, smooth=True, offset=1.0):
     """Parametric open surface fn(u, v) -> point, u,v in [0,1]."""
     verts = []
-    cu = nu if closed_u else nu
     for j in range(nv):
         for i in range(nu):
             u = i / (nu if closed_u else (nu - 1))
@@ -537,7 +536,7 @@ def _nodes(mat):
     try:
         mat.use_nodes = True
     except Exception:
-        pass
+        pass  # Blender 5 always uses nodes and makes this read-only
     return mat.node_tree.nodes, mat.node_tree.links
 
 
@@ -612,7 +611,6 @@ def material(name, base, base2=None, rough=0.5, metal=0.0, nscale=6.0, var=0.5, 
     tc = b.new('ShaderNodeTexCoord')
     co = tc.outputs['Object']
     geo = b.new('ShaderNodeNewGeometry')
-    col = base
     n1 = b.noise(co, nscale, 6.0, 0.6)
     col = b.mixc(base, base2 or tuple(x * 0.55 for x in base), b.mapr(n1, 0.5 - var * 0.5, 0.5 + var * 0.5))
     if streak:  # stretched noise (hair strands / cloth weave): (scale, axis_stretch, colour)
@@ -999,3 +997,50 @@ def finish(name, accent, tex=2048, ntex=2048, extra_rot=0.0, emit_boost=None, tr
                               export_tangents=False, export_cameras=False, export_lights=False)
     print(f"[{name}] exported {glb} {os.path.getsize(glb) / 1e6:.2f} MB tris={tris}")
     return glb
+
+# names the build_<fighter>.py scripts take with `from common import *`
+__all__ = [
+    'bpy',
+    'bmesh',
+    'math',
+    'os',
+    'random',
+    'np',
+    'Vector',
+    'Matrix',
+    'Euler',
+    'V',
+    'ROOT',
+    'H_TARGET',
+    'reset',
+    'link',
+    'mesh_obj',
+    'recalc_normals',
+    'subsurf',
+    'solidify',
+    'bevel',
+    'place',
+    'parent_keep',
+    'catmull',
+    'frames',
+    'loft',
+    'surface',
+    'ribbon',
+    'ellipsoid',
+    'rbox',
+    'cylinder',
+    'rock',
+    'tube_path',
+    'clip',
+    'head_mesh',
+    'hair_clumps',
+    'hair_shell',
+    'group',
+    'NB',
+    'rgb',
+    'material',
+    'art_image',
+    'add_art_uv',
+    'bake_image',
+    'finish',
+]
