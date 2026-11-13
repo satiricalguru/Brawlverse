@@ -292,7 +292,7 @@ requestAnimationFrame(frame);
 
 /* ---------- reveals ---------- */
 if (!reduced) {
-  $$('.friend__left > *, .build__head > *, .intro .label, .intro__meta div, .faq__left > *, .faq details, .cta > .label, .cta > h2, .cta > p, .cta > .btn, .foot__top > *').forEach((el) => {
+  $$('.friend__left > *, .build__head > *, .intro .label, .intro__meta div, .faq__left > *, .faq details, .cta > .label, .cta > h2, .cta > p, .cta > .cta__actions, .foot__top > *').forEach((el) => {
     gsap.from(el, { opacity: 0, y: 44, duration: 1.1, ease: 'expo.out', scrollTrigger: { trigger: el, start: 'top 90%' } });
   });
   $$('.step').forEach((el) => {

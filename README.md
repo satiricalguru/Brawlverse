@@ -8,7 +8,8 @@
 An original 3D platform brawler for the browser — no install, send a link, fight a friend.
 
 [![Live site](https://img.shields.io/badge/live-brawlverse.vercel.app-ff8a4c?style=for-the-badge&labelColor=0b0912)](https://brawlverse.vercel.app)
-[![Status](https://img.shields.io/badge/status-in%20development-ffb86b?style=for-the-badge&labelColor=0b0912)](#-roadmap)
+[![Play](https://img.shields.io/badge/play-brawlverse.vercel.app%2Fplay-ff8a4c?style=for-the-badge&labelColor=0b0912)](https://brawlverse.vercel.app/play/)
+[![Status](https://img.shields.io/badge/status-playable%20prototype-ffb86b?style=for-the-badge&labelColor=0b0912)](#-roadmap)
 [![Stars](https://img.shields.io/github/stars/satiricalguru/Brawlverse?style=for-the-badge&color=ff4f8b&labelColor=0b0912)](https://github.com/satiricalguru/Brawlverse/stargazers)
 
 ![three.js](https://img.shields.io/badge/three.js-r187-f6f1e9?style=flat-square&logo=threedotjs&logoColor=white&labelColor=0b0912)
@@ -16,7 +17,7 @@ An original 3D platform brawler for the browser — no install, send a link, fig
 ![Vite](https://img.shields.io/badge/Vite-8-646cff?style=flat-square&logo=vite&logoColor=white&labelColor=0b0912)
 ![Vercel](https://img.shields.io/badge/deployed%20on-Vercel-f6f1e9?style=flat-square&logo=vercel&logoColor=white&labelColor=0b0912)
 
-[**Play the trailer →**](https://brawlverse.vercel.app) &nbsp;·&nbsp; [Fighters](#-the-roster) &nbsp;·&nbsp; [Stages](#-the-stages) &nbsp;·&nbsp; [Run it locally](#-quick-start) &nbsp;·&nbsp; [How it's built](#-how-its-built)
+[**Play now →**](https://brawlverse.vercel.app/play/) &nbsp;·&nbsp; [Watch the trailer](https://brawlverse.vercel.app) &nbsp;·&nbsp; [Fighters](#-the-roster) &nbsp;·&nbsp; [Stages](#-the-stages) &nbsp;·&nbsp; [Run it locally](#-quick-start) &nbsp;·&nbsp; [How it's built](#-how-its-built)
 
 <br />
 
@@ -108,7 +109,9 @@ Open the URL Vite prints (default `http://localhost:5173`) and scroll.
 
 | Command | What it does |
 |:--|:--|
-| `npm run dev` | Dev server with hot reload |
+| `npm run dev` | Dev server with hot reload: the site at `/`, the game at `/play/` |
+| `npm test` | Simulation and netcode tests (determinism, rollback, roster, stages) |
+| `cd server && npm install && npm run dev` | Local room service for online play (the game uses it automatically in dev) |
 | `npm run build` | Production build into `dist/` |
 | `npm run preview` | Serve the production build locally |
 
@@ -154,13 +157,15 @@ flowchart LR
 
 - [x] Cinematic landing page with scroll trailer, 3D roster and stage reveals
 - [x] Deploy on Vercel
-- [ ] Playable movement prototype: run, jump, double-jump, ledge grab
-- [ ] Hit, knockback and launch-percentage system
-- [ ] Peer-to-peer rooms over WebRTC with rollback netcode
-- [ ] Signature moves for all four fighters
-- [ ] First public playable build
-
-Watch or ⭐ the repo to see the playable build land.
+- [x] Deterministic 60 Hz simulation: movement, jumps, ledges, shields, dodges, knockback and stocks
+- [x] Four fighters with their own frame data and Mixamo animation
+- [x] Four stages built from the key art, plus a grey-box training stage
+- [x] Play with a Friend: rollback netcode over WebRTC, room codes and share links (Cloudflare room service)
+- [x] Menus: character and stage select, results, training mode, key remapping
+- [x] First public playable build at [`/play`](https://brawlverse.vercel.app/play/)
+- [ ] Each player picks their own fighter online, and online rematches
+- [ ] Music, more stages, signature special moves
+- [ ] TURN relay for the strictest networks
 
 ## 🤝 Contributing
 

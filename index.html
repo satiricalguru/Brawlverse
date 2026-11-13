@@ -43,6 +43,7 @@
         <a href="#build">The build</a>
         <a href="#faq">FAQ</a>
       </nav>
+      <a class="btn btn--sm nav__play" href="/play/">Play now</a>
       <a class="stars" id="gh" href="https://github.com/satiricalguru/Brawlverse" target="_blank" rel="noopener" aria-label="Star Brawlverse on GitHub">
         <svg class="gh-mark" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2.1c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.56-.29-5.25-1.28-5.25-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.78 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.43-2.7 5.4-5.27 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg>
         <svg class="star" viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M12 3.2l2.7 5.7 6.1.8-4.5 4.3 1.2 6.1L12 17.1l-5.5 3 1.2-6.1-4.500-4.300 6.100-.800z"/></svg>
@@ -59,12 +60,12 @@
           <div class="hero__bars" id="hero-bars" aria-hidden="true"></div>
 
           <div class="hero__title" id="hero-title">
-            <p class="label">A 3D brawler for the browser · <b>In development</b></p>
+            <p class="label">A 3D brawler for the browser · <b>Playable now</b></p>
             <h1 class="wordmark" id="wordmark" aria-label="Brawlverse">Brawlverse</h1>
             <p class="hero__tag">Every world. <span class="sun">One arena.</span></p>
             <div class="hero__cta">
-              <a class="btn" href="#fighters">Meet the fighters</a>
-              <a class="btn btn--line" href="#stages">Tour the stages</a>
+              <a class="btn" href="/play/">Play now</a>
+              <a class="btn btn--line" href="#fighters">Meet the fighters</a>
             </div>
           </div>
 
@@ -167,11 +168,11 @@
       <!-- PLAY WITH A FRIEND -->
       <section class="friend" id="friend">
         <div class="friend__left">
-          <span class="label">Play with a friend · Planned</span>
+          <span class="label">Play with a friend · Live</span>
           <h2 class="h2">Send a link.<br /><span class="sun">Settle it.</span></h2>
           <p class="lede">
-            The first mode we're building: a room code, a direct peer-to-peer connection, and rollback netcode so hits
-            land when you press the button.
+            Open a room, send the link, fight. A direct peer-to-peer connection and rollback netcode mean your hits land
+            when you press the button.
           </p>
         </div>
         <ol class="steps">
@@ -225,19 +226,19 @@
         <div class="faq__list">
           <details open>
             <summary>Can I play Brawlverse right now?</summary>
-            <p>Not yet. This page is the first thing we've shipped. The playable build is in development, and the GitHub repository is where it will appear first.</p>
+            <p>Yes. <a href="/play/">Open the game</a> in this browser: two players on one keyboard or two gamepads, a training mode, and online matches with a friend. It's an early build and it's getting better every week.</p>
           </details>
           <details>
             <summary>What kind of game is it?</summary>
             <p>A platform brawler. Hits raise your opponent's damage, higher damage means longer launches, and you take a stock by knocking them off the stage. Last fighter with stocks left wins.</p>
           </details>
           <details>
-            <summary>What will I need to play?</summary>
-            <p>A modern desktop browser with WebGL. There is nothing to install. The plan is keyboard and gamepad support; phones are not a launch target.</p>
+            <summary>What do I need to play?</summary>
+            <p>A modern desktop browser with WebGL. There is nothing to install. Keyboard and gamepads both work, and every key can be changed. Phones are not a target yet.</p>
           </details>
           <details>
-            <summary>How will playing with a friend work?</summary>
-            <p>You open a room, send the link, and your friend joins from their browser. The match runs peer to peer with rollback netcode, so it stays responsive without a game server in the middle. Two players on one keyboard is planned too.</p>
+            <summary>How does playing with a friend work?</summary>
+            <p>Choose Play online, pick the fighters and the stage, and send the link. Your friend opens it in their browser and you're fighting. The match runs peer to peer with rollback netcode, so it stays responsive without a game server in the middle.</p>
           </details>
           <details>
             <summary>Is this based on an existing game?</summary>
@@ -261,9 +262,12 @@
         </video>
         <div class="cta__bg" aria-hidden="true"></div>
         <span class="label">Built in the open</span>
-        <h2 class="cta__title">The arena<br /><span class="sun">opens soon.</span></h2>
-        <p class="lede">Morning over the arena. Watch the repository to see the first playable build land.</p>
-        <a class="btn" href="https://github.com/satiricalguru/Brawlverse" target="_blank" rel="noopener">Follow on GitHub</a>
+        <h2 class="cta__title">The arena<br /><span class="sun">is open.</span></h2>
+        <p class="lede">Morning over the arena. Pick a fighter, pick a world, send a friend the link.</p>
+        <div class="cta__actions">
+          <a class="btn" href="/play/">Play now</a>
+          <a class="btn btn--line" href="https://github.com/satiricalguru/Brawlverse" target="_blank" rel="noopener">Follow on GitHub</a>
+        </div>
         <button class="cta__toggle" id="cta-toggle" type="button" aria-pressed="false">Pause video</button>
       </section>
     </main>
@@ -273,7 +277,7 @@
         <div class="foot__brand">
           <a class="nav__brand" href="#top"><svg class="logo" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><g transform="skewX(-12) translate(3.4 0)" fill="currentColor"><path d="M5 4h6v24H5z"/><path d="M13 4h6l6 5.75-6 5.75h-6z"/><path d="M13 16.5h7l7 5.75-7 5.75h-7z"/></g></svg><span>BRAWLVERSE</span></a>
           <p>An original 3D platform brawler for the browser. Every world. One arena.</p>
-          <span class="foot__status"><i></i>In development</span>
+          <span class="foot__status"><i></i>Playable prototype</span>
         </div>
         <nav class="foot__col" aria-label="Explore">
           <h3>Explore</h3>
@@ -292,6 +296,7 @@
         </nav>
         <nav class="foot__col" aria-label="Project">
           <h3>Project</h3>
+          <a href="/play/">Play the game</a>
           <a href="https://github.com/satiricalguru/Brawlverse" target="_blank" rel="noopener">GitHub repository</a>
           <a href="https://github.com/satiricalguru/Brawlverse/issues" target="_blank" rel="noopener">Report an issue</a>
           <a href="https://github.com/satiricalguru/Brawlverse/commits" target="_blank" rel="noopener">Changelog</a>

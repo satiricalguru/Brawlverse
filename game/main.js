@@ -530,7 +530,13 @@ function drawDebug(now) {
     (f) => `P${f.id + 1} ${ACT_NAMES[f.action].toLowerCase().padEnd(11)} f${String(f.af).padStart(3)}  hs${f.hitstun} hl${f.hitlag}`
   );
   const net = driver.info();
-  debugEl.textContent = [`${phase}  frame ${state.frame}  ${fps} fps  hash ${hash(state).toString(16).padStart(8, '0')}`, ...rows, ...(net ? [net] : [])].join('\n');
+  const g = view.gpu;
+  debugEl.textContent = [
+    `${phase}  frame ${state.frame}  ${fps} fps  hash ${hash(state).toString(16).padStart(8, '0')}`,
+    `gpu ${g.calls} draw calls  ${(g.triangles / 1000).toFixed(0)}k tris  dpr ${g.dpr}`,
+    ...rows,
+    ...(net ? [net] : []),
+  ].join('\n');
 }
 
 /* ---------- loop ---------- */

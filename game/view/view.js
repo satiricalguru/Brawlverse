@@ -26,6 +26,7 @@ export function createView(canvas, { audio = null } = {}) {
   renderer.toneMappingExposure = 1.05;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
+  renderer.info.autoReset = false; // counted per frame below, shadow pass included
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#0b0912');
@@ -222,6 +223,7 @@ export function createView(canvas, { audio = null } = {}) {
   const cam = { x: 0, y: 1.8, z: 16 };
   let shake = 0;
   let debug = false;
+  let lastGpu = { calls: 0, triangles: 0 };
   let lastT = performance.now();
 
   function resize() {
@@ -233,6 +235,22 @@ export function createView(canvas, { audio = null } = {}) {
   }
   resize();
   window.addEventListener('resize', resize);
+
+  // weaker GPUs: if frames keep running slow, render fewer pixels (never goes back up
+  // mid-session, so it cannot oscillate). Long gaps from a hidden tab are ignored.
+  let slowAvg = 1 / 60;
+  let lastDrop = 0;
+  function adaptResolution(now, dt) {
+    if (dt <= 0 || dt > 0.1) return;
+    slowAvg += (dt - slowAvg) * 0.05;
+    const dpr = renderer.getPixelRatio();
+    if (slowAvg > 1 / 48 && dpr > 1 && now - lastDrop > 2500) {
+      lastDrop = now;
+      slowAvg = 1 / 60;
+      renderer.setPixelRatio(Math.max(1, Math.round((dpr - 0.25) * 100) / 100));
+      resize();
+    }
+  }
 
   function frameCamera(state, dt) {
     let minX = Infinity;
@@ -422,7 +440,10 @@ export function createView(canvas, { audio = null } = {}) {
 
     frameCamera(state, dt);
     stageV.update(now / 1000, camera);
+    adaptResolution(now, dt);
+    renderer.info.reset();
     renderer.render(scene, camera);
+    lastGpu = { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
   }
 
   return {
@@ -433,6 +454,10 @@ export function createView(canvas, { audio = null } = {}) {
     },
     get debug() {
       return debug;
+    },
+    // what one frame costs the GPU (shadow pass included): draw calls and triangles
+    get gpu() {
+      return { ...lastGpu, dpr: renderer.getPixelRatio() };
     },
     // loaded rigged models, for dev tooling
     get models() {
