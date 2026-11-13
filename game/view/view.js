@@ -3,25 +3,35 @@
 
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { ACT, FIGHTERS, STAGES, SUB, SHIELD_MAX, activeHitboxes, heightOf, intangible } from '../sim/sim.js';
+import { ACT, FIGHTERS, STAGES, SUB, SHIELD_MAX, activeHitboxes, heightOf, intangible, MOVE_IDS } from '../sim/sim.js';
+import { loadFighterModel } from './model.js';
+
+// rigged models per fighter, and their moves file (null until that fighter's clips exist: Idle only)
+const MODELS = {
+  Kael: ['/models/mixamo/kael.glb', '/models/mixamo/kael_moves.glb'],
+  Nyx: ['/models/mixamo/nyx.glb', null],
+  Bramm: ['/models/mixamo/bramm.glb', null],
+  Zephra: ['/models/mixamo/zephra.glb', null],
+};
+const HEAVY = new Set(['fsmash', 'usmash', 'dsmash', 'fair', 'bair', 'dair']);
 
 const U = 1 / (SUB * 100); // sub-pixels -> scene units (100 px = 1 unit)
 
-export function createView(canvas) {
+export function createView(canvas, { audio = null } = {}) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#0b0912');
   scene.fog = new THREE.Fog('#0b0912', 18, 46);
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-  scene.environmentIntensity = 0.35;
+  scene.environmentIntensity = 0.7;
 
   const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 200);
   camera.position.set(0, 2.2, 18);
@@ -42,6 +52,10 @@ export function createView(canvas) {
   const rimR = new THREE.PointLight(FIGHTERS[1].color, 18, 30, 2);
   rimR.position.set(9, 4, -3);
   scene.add(rimL, rimR);
+  // soft fill from the camera side so dark armour still reads
+  const fill = new THREE.DirectionalLight('#cfd8ff', 0.9);
+  fill.position.set(-2, 3, 12);
+  scene.add(fill);
 
   /* ---------- stage ---------- */
   const st = STAGES[0];
@@ -187,8 +201,23 @@ export function createView(canvas) {
     hurt.position.y = H / 2;
     hurt.visible = false;
     root.add(hurt);
+    // the rigged model hangs here once it has loaded; until then the capsule stands in
+    const rig = new THREE.Group();
+    root.add(rig);
     scene.add(root);
-    return { root, body, mat, capsule, visor, marker, shield, halo, hurt, color, H, seenHit: -1, seenKo: -1, squash: 0 };
+    const v = { root, body, rig, mat, capsule, visor, marker, shield, halo, hurt, color, H, model: null };
+    Object.assign(v, { seenHit: -1, seenKo: -1, squash: 1, prevAction: -1, prevMove: -1, prevJumps: c.jumps, prevGrounded: true, lastAf: 0 });
+    const urls = MODELS[c.name];
+    if (urls) {
+      loadFighterModel(urls[0], urls[1], H * 1.08, c.name)
+        .then((m) => {
+          v.model = m;
+          rig.add(m.root);
+          capsule.visible = visor.visible = false;
+        })
+        .catch((err) => console.warn(`${c.name}: model failed to load, keeping the capsule`, err));
+    }
+    return v;
   });
 
   // hitbox pool (debug)
@@ -281,6 +310,25 @@ export function createView(canvas) {
     shake *= Math.exp(-dt * 9);
   }
 
+  const panOf = (f) => Math.max(-1, Math.min(1, f.x / (st.blast.right * 0.6)));
+
+  // sounds for things that just started: swings, jumps, landings, shield breaks
+  function cues(f, v) {
+    if (!audio) return;
+    const pan = panOf(f);
+    const newAttack = f.action === ACT.ATTACK && (v.prevAction !== ACT.ATTACK || v.prevMove !== f.move || f.af < v.lastAf);
+    if (newAttack) audio.swing(HEAVY.has(MOVE_IDS[f.move]), pan);
+    const jumped = !f.grounded && f.vy > 0 && (f.jumpsLeft < v.prevJumps || (v.prevGrounded && f.action === ACT.AIR));
+    if (jumped) audio.jump(pan);
+    else if (!v.prevGrounded && f.grounded && f.action === ACT.LAND) audio.land(pan);
+    if (f.action === ACT.SHIELDBREAK && v.prevAction !== ACT.SHIELDBREAK) audio.shieldBreak(pan);
+    v.prevAction = f.action;
+    v.prevMove = f.move;
+    v.prevJumps = f.jumpsLeft;
+    v.prevGrounded = f.grounded;
+    v.lastAf = f.af;
+  }
+
   function drawFighter(state, f, v, dt, now) {
     const c = FIGHTERS[f.char];
     const dead = f.action === ACT.DEAD;
@@ -292,6 +340,7 @@ export function createView(canvas) {
       burst(f.koX * U, f.koY * U, v.color, 4, 0.9);
       burst(f.koX * U, f.koY * U, '#ffffff', 2.4, 0.5);
       shake = Math.max(shake, 0.6);
+      audio?.ko(panOf(f));
     }
     if (dead) return;
 
@@ -302,7 +351,10 @@ export function createView(canvas) {
       const hy = f.y * U + v.H * 0.55;
       burst(hx, hy, f.blocked ? v.color : '#fff1c9', f.blocked ? 0.7 : 0.6 + f.lastKb / 160, 0.32);
       shake = Math.max(shake, Math.min(0.5, f.lastKb / 300));
+      if (f.blocked) audio?.block(panOf(f));
+      else audio?.hit(f.lastKb, panOf(f));
     }
+    cues(f, v);
 
     let x = f.x * U;
     const y = f.y * U;
@@ -330,7 +382,23 @@ export function createView(canvas) {
     else if (f.action === ACT.ATTACK && f.charge > 0) glow = 0.3 + 0.25 * Math.sin(now * 0.03);
     else if (f.action === ACT.SHIELDBREAK) glow = 0.4 + 0.3 * Math.sin(now * 0.025);
     v.mat.emissiveIntensity = glow;
-    v.mat.opacity = intangible(f) && f.action !== ACT.RESPAWN ? 0.45 + 0.15 * Math.sin(now * 0.04) : 1;
+    const opacity = intangible(f) && f.action !== ACT.RESPAWN ? 0.45 + 0.15 * Math.sin(now * 0.04) : 1;
+    v.mat.opacity = opacity;
+
+    if (v.model) {
+      v.model.update(f, dt);
+      // side-on to the fight, turned a little toward the camera so faces read
+      v.rig.rotation.y = f.facing > 0 ? Math.PI / 2 - 0.45 : -Math.PI / 2 + 0.45;
+      v.rig.rotation.z = v.body.rotation.z * 0.6;
+      // the clips crouch on their own; squash only for the jump-squat and landing
+      const ry = f.action === ACT.CROUCH ? 1 : v.squash;
+      v.rig.scale.set(1 / Math.sqrt(ry), ry, 1 / Math.sqrt(ry));
+      for (const m of v.model.materials) {
+        m.emissive.set(flash ? '#ffffff' : v.color);
+        m.emissiveIntensity = flash ? 0.85 : Math.max(0, glow - 0.12);
+        m.opacity = opacity;
+      }
+    }
 
     const shielding = f.action === ACT.SHIELD || f.action === ACT.SHIELDSTUN;
     v.shield.visible = shielding;
@@ -395,6 +463,10 @@ export function createView(canvas) {
     },
     get debug() {
       return debug;
+    },
+    // loaded rigged models, for dev tooling
+    get models() {
+      return fighters.map((v) => v.model);
     },
   };
 }

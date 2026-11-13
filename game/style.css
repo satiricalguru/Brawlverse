@@ -107,6 +107,10 @@ kbd {
   border: 1px solid var(--line);
   border-radius: 999px;
 }
+.tag,
+.hint {
+  white-space: nowrap;
+}
 .hint {
   margin-left: auto;
   font-size: 12px;
@@ -399,9 +403,13 @@ kbd {
   border-color: var(--line);
 }
 
-@media (max-width: 640px) {
-  .hint,
+@media (max-width: 900px) {
   .tag {
+    display: none;
+  }
+}
+@media (max-width: 640px) {
+  .hint {
     display: none;
   }
   .card {
