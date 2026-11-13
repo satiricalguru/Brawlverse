@@ -32,6 +32,18 @@ const input = createInput(window);
 // ?net=sim runs each player as its own rollback peer over a fake network (lag, jitter,
 // loss from the URL) and shows P1's side: online play, felt on one machine.
 const params = new URLSearchParams(location.search);
+
+// who fights where: ?p1=kael&p2=nyx&stage=cinder (names or indexes), changeable from the pause menu
+const byName = (list, v, d) => {
+  if (v == null) return d;
+  const i = list.findIndex((x) => x.name.toLowerCase().startsWith(String(v).toLowerCase()));
+  if (i >= 0) return i;
+  return Number.isInteger(+v) && +v >= 0 && +v < list.length ? +v : d;
+};
+const setup = {
+  chars: [byName(FIGHTERS, params.get('p1'), 0), byName(FIGHTERS, params.get('p2'), 1)],
+  stage: byName(sim.STAGES, params.get('stage'), 1),
+};
 const num = (k, d) => (params.has(k) && Number.isFinite(+params.get(k)) ? +params.get(k) : d);
 const NETSIM = params.get('net') === 'sim'
   ? { latency: num('lag', 80), jitter: num('jitter', 15), loss: num('loss', 0.05), delay: num('delay', 2) }
@@ -39,13 +51,13 @@ const NETSIM = params.get('net') === 'sim'
 
 function createDriver() {
   if (!NETSIM) {
-    const s = createState();
+    const s = createState(setup);
     return { state: s, tick: (inp) => step(s, inp), info: () => '' };
   }
   const net = createLoopback(NETSIM);
   const ends = [net.a, net.b];
   const peers = [0, 1].map((i) => {
-    const p = new RollbackSession({ local: i, sim, send: (b) => ends[i].send(b), delay: NETSIM.delay });
+    const p = new RollbackSession({ local: i, sim, send: (b) => ends[i].send(b), delay: NETSIM.delay, stateOptions: setup });
     ends[i].onMessage((b) => p.receive(b));
     return p;
   });
@@ -66,6 +78,7 @@ function createDriver() {
   };
   return d;
 }
+const tagText = () => (NETSIM ? `Lag sim · ${NETSIM.latency} ms` : sim.STAGES[setup.stage].name);
 let driver = createDriver();
 let state = driver.state;
 let paused = false;
@@ -73,12 +86,14 @@ let acc = 0;
 let last = performance.now();
 
 /* ---------- HUD ---------- */
-const cards = [...document.querySelectorAll('.card')].map((el, i) => {
-  const c = FIGHTERS[state.fighters[i].char];
-  el.style.setProperty('--pc', c.color);
-  el.querySelector('.card__name').textContent = c.name;
-  return { el, pct: el.querySelector('.card__pct b'), stocks: el.querySelector('.card__stocks'), shown: -1, lives: -1 };
-});
+const cards = [...document.querySelectorAll('.card')].map((el) => ({
+  el,
+  pct: el.querySelector('.card__pct b'),
+  stocks: el.querySelector('.card__stocks'),
+  shown: -1,
+  lives: -1,
+  char: -1,
+}));
 const pctColor = (d) => {
   // white -> amber -> red as damage climbs
   const t = Math.min(1, d / 150);
@@ -90,6 +105,12 @@ function drawHud() {
   state.fighters.forEach((f, i) => {
     const card = cards[i];
     if (!card) return;
+    if (card.char !== f.char) {
+      card.char = f.char;
+      const c = FIGHTERS[f.char];
+      card.el.style.setProperty('--pc', c.color);
+      card.el.querySelector('.card__name').textContent = c.name;
+    }
     if (card.shown !== f.damage) {
       if (f.damage > card.shown && card.shown >= 0) {
         card.el.classList.remove('is-hit');
@@ -132,6 +153,7 @@ function setPaused(on) {
   paused = on && !state.over;
   // an online match keeps running under the menu: the other player is still playing
   pauseEl.hidden = !paused;
+  if (paused) drawPicker();
   input.clear();
   if (paused) pauseEl.querySelector('[data-act="resume"]').focus();
   else canvas.focus?.();
@@ -139,6 +161,7 @@ function setPaused(on) {
 function restart() {
   if (driver.online) leaveOnline();
   driver = createDriver();
+  $('.tag').textContent = tagText();
   state = driver.state;
   cards.forEach((c) => {
     c.shown = -1;
@@ -190,6 +213,51 @@ function checkEnd() {
   }, 1500);
 }
 
+/* ---------- match picker (pause menu) ---------- */
+const pickEl = $('#pick');
+function drawPicker() {
+  const online = !!driver.online;
+  const row = (label, items, current, onPick, colorOf) => {
+    const r = document.createElement('div');
+    r.className = 'pick__row';
+    const l = document.createElement('span');
+    l.textContent = label;
+    const opts = document.createElement('div');
+    opts.className = 'pick__opts';
+    items.forEach((it, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = it.name;
+      b.setAttribute('aria-pressed', String(i === current));
+      if (colorOf) b.style.setProperty('--pc', colorOf(it));
+      b.disabled = online;
+      b.addEventListener('click', () => onPick(i));
+      opts.append(b);
+    });
+    r.append(l, opts);
+    return r;
+  };
+  const choose = (fn) => (i) => {
+    fn(i);
+    syncUrl();
+    restart();
+  };
+  pickEl.replaceChildren(
+    row('P1', FIGHTERS, setup.chars[0], choose((i) => (setup.chars[0] = i)), (c) => c.color),
+    row('P2', FIGHTERS, setup.chars[1], choose((i) => (setup.chars[1] = i)), (c) => c.color),
+    row('Stage', sim.STAGES, setup.stage, choose((i) => (setup.stage = i)))
+  );
+  $('#pick-note').hidden = !online;
+}
+// keep the address bar in step, so a refresh (or a shared link) gives the same match
+function syncUrl() {
+  const u = new URL(location.href);
+  u.searchParams.set('p1', FIGHTERS[setup.chars[0]].name.toLowerCase());
+  u.searchParams.set('p2', FIGHTERS[setup.chars[1]].name.toLowerCase());
+  u.searchParams.set('stage', sim.STAGES[setup.stage].name.split(' ')[0].toLowerCase());
+  history.replaceState(null, '', u);
+}
+
 /* ---------- online: Play with a Friend ---------- */
 // the room service (server/): local wrangler dev while developing, the deployed Worker
 // otherwise; VITE_ROOMS_URL overrides both
@@ -206,7 +274,7 @@ function status(text, error = false) {
 }
 
 function onlineDriver(transport) {
-  const session = new RollbackSession({ local: transport.seat, sim, send: (b) => transport.send(b) });
+  const session = new RollbackSession({ local: transport.seat, sim, send: (b) => transport.send(b), stateOptions: setup });
   transport.onMessage((b) => session.receive(b));
   let n = 0;
   let stalled = 0;
@@ -248,8 +316,19 @@ function openOnline(code) {
   else status('');
 }
 
+const validSetup = (d) =>
+  d &&
+  Array.isArray(d.chars) &&
+  d.chars.length === 2 &&
+  d.chars.every((c) => Number.isInteger(c) && c >= 0 && c < FIGHTERS.length) &&
+  Number.isInteger(d.stage) &&
+  d.stage >= 0 &&
+  d.stage < sim.STAGES.length;
+
 function join(code, hosting = false) {
   leaveOnline();
+  let gotSetup = false;
+  let linkReady = false;
   $('#room-host').hidden = !hosting;
   $('#room-join').hidden = hosting;
   if (hosting) {
@@ -268,13 +347,33 @@ function join(code, hosting = false) {
     url: ROOMS_URL,
     code,
     onStatus(s, d) {
-      if (s === 'connecting') status('Connecting to the room…');
-      else if (s === 'waiting') status(hosting ? 'Waiting for your friend to open the link…' : 'Waiting for the host…');
-      else if (s === 'joined') status('Friend found. Connecting…');
-      else if (s === 'full') status('That room already has two players.', true);
-      else if (s === 'error') status(d?.message || 'Something went wrong.', true);
-      else if (s === 'ready') startOnline();
-      else if (s === 'left') friendLeft();
+      switch (s) {
+        case 'connecting':
+          return status('Connecting to the room…');
+        case 'waiting':
+          return status(hosting ? 'Waiting for your friend to open the link…' : 'Waiting for the host…');
+        case 'joined':
+          if (hosting) link.sendSetup(setup);
+          return status('Friend found. Connecting…');
+        case 'setup':
+          // the guest plays the host's match: same fighters, same stage, or the sims would diverge
+          if (hosting || !validSetup(d)) return;
+          Object.assign(setup, { chars: d.chars, stage: d.stage });
+          gotSetup = true;
+          if (linkReady) startOnline();
+          return;
+        case 'ready':
+          linkReady = true;
+          if (hosting || gotSetup) startOnline();
+          else status('Connected. Getting the match from the host…');
+          return;
+        case 'full':
+          return status('That room already has two players.', true);
+        case 'error':
+          return status(d?.message || 'Something went wrong.', true);
+        case 'left':
+          return friendLeft();
+      }
     },
   });
 }
@@ -310,7 +409,7 @@ function leaveOnline() {
   link?.close();
   link = null;
   cards.forEach((c, i) => (c.el.querySelector('.card__tag').textContent = `P${i + 1}`));
-  $('.tag').textContent = NETSIM ? `Lag sim · ${NETSIM.latency} ms` : 'Prototype · Proving Grounds';
+  $('.tag').textContent = tagText();
 }
 
 document.addEventListener('click', async (e) => {
@@ -405,6 +504,6 @@ if (import.meta.env.DEV) {
 }
 
 window.addEventListener('gamepadconnected', (e) => flash(`Gamepad ${e.gamepad.index + 1} connected`, 1400));
-if (NETSIM) $('.tag').textContent = `Lag sim · ${NETSIM.latency} ms`;
+$('.tag').textContent = tagText();
 flash('Fight!');
 requestAnimationFrame(frame);

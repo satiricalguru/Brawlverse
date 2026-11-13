@@ -7,9 +7,9 @@
 
 import { SUB, px, idiv, clamp, toward0, approach, isin, icos, ONE } from './fixed.js';
 import { FIGHTERS, MOVES, MOVE_IDS } from './fighters.js';
-import { PROVING_GROUNDS } from './stage.js';
+import { STAGE_LIST } from './stage.js';
 
-export const STAGES = [PROVING_GROUNDS];
+export const STAGES = STAGE_LIST;
 export { FIGHTERS, MOVES, MOVE_IDS, SUB };
 
 export const FPS = 60;
@@ -186,7 +186,7 @@ export function intangible(f) {
 // active hitboxes of a fighter this frame, in world sub-pixels
 export function activeHitboxes(f) {
   if (f.action !== ACT.ATTACK || f.move < 0) return [];
-  const m = MOVES[MOVE_IDS[f.move]];
+  const m = FIGHTERS[f.char].moves[MOVE_IDS[f.move]];
   const out = [];
   for (const h of m.hits) {
     if (f.af >= h.f0 && f.af <= h.f1) out.push({ x: f.x + h.x * f.facing, y: f.y + h.y, r: h.r, h });
@@ -313,6 +313,9 @@ function airOptions(f, c) {
   return false;
 }
 
+// ground friction for this fighter on this stage (ice has less grip)
+const grip = (c, st) => idiv(c.friction * (st.grip ?? 100), 100);
+
 function update(f, s, st) {
   const c = FIGHTERS[f.char];
   f.af++;
@@ -325,14 +328,14 @@ function update(f, s, st) {
       const dx = dirX(f);
       if (f.held & DOWN) {
         f.action = ACT.CROUCH;
-        f.vx = toward0(f.vx, c.friction);
+        f.vx = toward0(f.vx, grip(c, st));
       } else if (dx) {
         f.action = ACT.RUN;
         f.facing = dx;
         f.vx = approach(f.vx, dx * c.runSpeed, c.groundAccel);
       } else {
         f.action = ACT.IDLE;
-        f.vx = toward0(f.vx, c.friction);
+        f.vx = toward0(f.vx, grip(c, st));
       }
       break;
     }
@@ -361,18 +364,18 @@ function update(f, s, st) {
       break;
 
     case ACT.LAND:
-      f.vx = toward0(f.vx, c.friction);
+      f.vx = toward0(f.vx, grip(c, st));
       if (f.af >= f.lag) f.action = ACT.IDLE;
       break;
 
     case ACT.ATTACK: {
-      const m = MOVES[MOVE_IDS[f.move]];
+      const m = FIGHTERS[f.char].moves[MOVE_IDS[f.move]];
       // smash attacks hold on their charge frame while the button stays down
       if (m.charge && f.af - 1 === m.charge && f.held & STRONG && f.charge < MAX_CHARGE) {
         f.af--;
         f.charge++;
       }
-      if (f.grounded) f.vx = toward0(f.vx, c.friction);
+      if (f.grounded) f.vx = toward0(f.vx, grip(c, st));
       else {
         airDrift(f, c);
         gravity(f, c);
@@ -392,7 +395,7 @@ function update(f, s, st) {
 
     case ACT.HITSTUN:
       f.hitstun--;
-      if (f.grounded) f.vx = toward0(f.vx, c.friction);
+      if (f.grounded) f.vx = toward0(f.vx, grip(c, st));
       else gravity(f, c, false);
       if (f.hitstun <= 0) {
         if (f.grounded) f.action = ACT.IDLE;
@@ -401,7 +404,7 @@ function update(f, s, st) {
       break;
 
     case ACT.SHIELD: {
-      f.vx = toward0(f.vx, c.friction);
+      f.vx = toward0(f.vx, grip(c, st));
       if (!(f.held & SHIELD)) {
         f.action = ACT.IDLE;
         break;
@@ -429,12 +432,12 @@ function update(f, s, st) {
     }
 
     case ACT.SHIELDSTUN:
-      f.vx = toward0(f.vx, idiv(c.friction, 2));
+      f.vx = toward0(f.vx, idiv(grip(c, st), 2));
       if (--f.hitstun <= 0) f.action = f.held & SHIELD ? ACT.SHIELD : ACT.IDLE;
       break;
 
     case ACT.SHIELDBREAK:
-      if (f.grounded) f.vx = toward0(f.vx, c.friction);
+      if (f.grounded) f.vx = toward0(f.vx, grip(c, st));
       else gravity(f, c, false);
       if (--f.hitstun <= 0) {
         f.shield = idiv(SHIELD_MAX, 2);
@@ -444,7 +447,7 @@ function update(f, s, st) {
       break;
 
     case ACT.ROLL:
-      f.vx = f.af >= 3 && f.af <= 20 ? f.dodgeDir * px(7) : toward0(f.vx, c.friction);
+      f.vx = f.af >= 3 && f.af <= 20 ? f.dodgeDir * px(7) : toward0(f.vx, grip(c, st));
       if (f.af >= 28) {
         f.facing = -f.dodgeDir;
         f.action = ACT.IDLE;
@@ -452,7 +455,7 @@ function update(f, s, st) {
       break;
 
     case ACT.SPOTDODGE:
-      f.vx = toward0(f.vx, c.friction);
+      f.vx = toward0(f.vx, grip(c, st));
       if (f.af >= 22) f.action = ACT.IDLE;
       break;
 
@@ -579,7 +582,7 @@ function land(f, c, surf, top) {
     f.af = 0;
     f.lag = 4;
   } else if (f.action === ACT.ATTACK) {
-    const m = MOVES[MOVE_IDS[f.move]];
+    const m = FIGHTERS[f.char].moves[MOVE_IDS[f.move]];
     f.action = ACT.LAND;
     f.af = 0;
     f.lag = m.landing || 4;
@@ -597,7 +600,7 @@ function move(f, st) {
   const c = FIGHTERS[f.char];
   f.kvx = toward0(f.kvx, f.kdx);
   f.kvy = toward0(f.kvy, f.kdy);
-  if (f.grounded) f.kvx = toward0(f.kvx, c.friction);
+  if (f.grounded) f.kvx = toward0(f.kvx, grip(c, st));
 
   const ox = f.x;
   const oy = f.y;

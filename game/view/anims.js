@@ -4,7 +4,7 @@
 // always shows the same pose, which keeps rollback re-simulation from popping the
 // animation and lines each attack's impact up with its first active hitbox frame.
 
-import { ACT, MOVES, MOVE_IDS, FPS } from '../sim/sim.js';
+import { ACT, FIGHTERS, MOVE_IDS, FPS } from '../sim/sim.js';
 
 // a clip that is missing falls back along this chain, ending at Idle
 export const FALLBACK = {
@@ -95,7 +95,7 @@ export function pick(f) {
       return { name: 'land', u: Math.min(1, f.af / Math.max(1, f.lag)), span: 0.3 };
     case ACT.ATTACK: {
       const id = MOVE_IDS[f.move];
-      const m = MOVES[id];
+      const m = FIGHTERS[f.char].moves[id];
       return { name: id, attack: m, af: f.af };
     }
     case ACT.HITSTUN:

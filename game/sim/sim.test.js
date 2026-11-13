@@ -150,3 +150,87 @@ test('losing every stock ends the match with a winner', () => {
   assert.equal(s.over, true);
   assert.equal(s.winner, 1);
 });
+
+/* ------------------------------------------------------------ roster and stages */
+
+import { FIGHTERS, MOVE_IDS } from './sim.js';
+
+test('every fighter on every stage stands, and replays identically', () => {
+  for (let stage = 0; stage < STAGES.length; stage++) {
+    for (let a = 0; a < FIGHTERS.length; a++) {
+      const b = (a + 1) % FIGHTERS.length;
+      const s = createState({ chars: [a, b], stage });
+      for (let i = 0; i < 240; i++) step(s, [0, 0]);
+      for (const f of s.fighters) assert.ok(f.grounded && f.y === 0, `${FIGHTERS[f.char].name} on ${STAGES[stage].name}`);
+      const runOnce = () => {
+        const t = createState({ chars: [a, b], stage });
+        const bots = [bot(stage * 10 + a), bot(stage * 10 + b + 5)];
+        for (let i = 0; i < 1800; i++) step(t, bots.map((x) => x()));
+        return hash(t);
+      };
+      assert.equal(runOnce(), runOnce());
+    }
+  }
+});
+
+test('frame data is whole numbers, starts no earlier than frame 2, and ends', () => {
+  for (const c of FIGHTERS) {
+    for (const id of MOVE_IDS) {
+      const m = c.moves[id];
+      for (const h of m.hits) {
+        for (const k of ['f0', 'f1', 'x', 'y', 'r', 'dmg', 'ang', 'bkb', 'kbg']) assert.ok(Number.isInteger(h[k]), `${c.name} ${id}.${k}`);
+        assert.ok(h.f0 >= 2 && h.f1 >= h.f0 && h.f1 < m.total, `${c.name} ${id} active ${h.f0}-${h.f1} of ${m.total}`);
+      }
+    }
+  }
+});
+
+test('Zephra has three jumps in the air, Kael two', () => {
+  const jumps = (char) => {
+    const s = createState({ chars: [char, 1] });
+    const f = s.fighters[0];
+    let n = 0;
+    let prevVy = 0;
+    let airborne = false;
+    for (let i = 0; i < 400; i++) {
+      step(s, [i % 14 === 0 ? BTN.JUMP : 0, 0]);
+      if (!f.grounded) airborne = true;
+      else if (airborne) break; // landed: one airtime counted
+      if (f.vy > prevVy + 5 * SUB) n++;
+      prevVy = f.vy;
+    }
+    return n;
+  };
+  assert.equal(jumps(3), 3);
+  assert.equal(jumps(0), 2);
+});
+
+test('the same smash launches Zephra far further than Bramm', () => {
+  const launch = (victim) => {
+    const s = createState({ chars: [0, victim] });
+    const [a, v] = s.fighters;
+    a.x = -40 * SUB;
+    v.x = 60 * SUB;
+    v.damage = 80;
+    step(s, [BTN.STRONG, 0]);
+    let far = v.x;
+    for (let i = 0; i < 120; i++) {
+      step(s, [0, 0]);
+      far = Math.max(far, v.x);
+    }
+    return far - 60 * SUB;
+  };
+  assert.ok(launch(3) > launch(2) * 1.3, `${launch(3)} vs ${launch(2)}`);
+});
+
+test('the ice on Frostspire lets a fighter slide further', () => {
+  const slide = (stage) => {
+    const s = createState({ chars: [1, 0], stage });
+    const f = s.fighters[0];
+    for (let i = 0; i < 30; i++) step(s, [BTN.RIGHT, 0]);
+    const x0 = f.x;
+    for (let i = 0; i < 60; i++) step(s, [0, 0]);
+    return f.x - x0;
+  };
+  assert.ok(slide(4) > slide(1) * 1.8, `${slide(4)} vs ${slide(1)}`);
+});

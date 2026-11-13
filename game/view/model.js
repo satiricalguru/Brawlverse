@@ -2,10 +2,17 @@
 
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import { pick, resolveClip, sampleTime, AIR_CLIPS, CLIP_WINDOWS } from './anims.js';
 
 const loader = new GLTFLoader();
-const load = (url) => loader.loadAsync(url);
+// each file loads once; every fighter instance (two in a mirror match) gets its own clone
+const cache = new Map();
+const load = (url) => {
+  if (!cache.has(url)) cache.set(url, loader.loadAsync(url));
+  return cache.get(url);
+};
+const prepared = new WeakSet(); // clips whose root motion is already stripped
 const FADE = 0.09; // seconds to blend between clips
 
 // the sim moves the fighter; clips must not carry it away. Pin the hips' sideways
@@ -34,7 +41,7 @@ function stripRootMotion(clip) {
 export async function loadFighterModel(url, movesUrl, height, name) {
   const windows = CLIP_WINDOWS[name] || {};
   const [base, moves] = await Promise.all([load(url), movesUrl ? load(movesUrl).catch(() => null) : null]);
-  const model = base.scene;
+  const model = cloneSkinned(base.scene);
   const materials = [];
   model.traverse((o) => {
     if (!o.isMesh) return;
@@ -49,7 +56,13 @@ export async function loadFighterModel(url, movesUrl, height, name) {
   root.add(model);
 
   const clips = new Map();
-  for (const c of [...base.animations, ...(moves?.animations || [])]) clips.set(c.name, stripRootMotion(c));
+  for (const c of [...base.animations, ...(moves?.animations || [])]) {
+    if (!prepared.has(c)) {
+      stripRootMotion(c);
+      prepared.add(c);
+    }
+    clips.set(c.name, c);
+  }
   const mixer = new THREE.AnimationMixer(model);
   const actions = new Map();
   const actionFor = (name) => {

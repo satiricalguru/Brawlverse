@@ -100,7 +100,7 @@ export class Room {
         return;
       }
       // only signalling passes through; the room never interprets SDP or candidates
-      if (!m || !['offer', 'answer', 'ice', 'relay-on', 'bye'].includes(m.type)) return;
+      if (!m || !['offer', 'answer', 'ice', 'relay-on', 'bye', 'setup'].includes(m.type)) return;
       other?.send(msg);
     } else {
       if (msg.byteLength > MAX_BINARY) return;
