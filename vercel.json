@@ -1,5 +1,6 @@
 {
   "framework": "vite",
+  "rewrites": [{ "source": "/play", "destination": "/play/index.html" }],
   "headers": [
     { "source": "/frames/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }] },
     { "source": "/media/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=2592000" }] },

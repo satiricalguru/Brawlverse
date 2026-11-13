@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Play — Brawlverse</title>
+    <meta name="description" content="Brawlverse playable prototype: two players, one keyboard, knock each other off the stage." />
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#08060d" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/ClashDisplay-Bold.woff2" crossorigin />
+  </head>
+  <body>
+    <canvas id="game" aria-label="Brawlverse match"></canvas>
+
+    <header class="bar">
+      <a class="brand" href="/" aria-label="Back to the Brawlverse site">
+        <svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><g transform="skewX(-12) translate(3.4 0)" fill="currentColor"><path d="M5 4h6v24H5z"/><path d="M13 4h6l6 5.75-6 5.75h-6z"/><path d="M13 16.5h7l7 5.75-7 5.75h-7z"/></g></svg>
+        <span>BRAWLVERSE</span>
+      </a>
+      <span class="tag">Prototype · Proving Grounds</span>
+      <span class="hint"><kbd>Esc</kbd> controls <kbd>`</kbd> hitboxes</span>
+    </header>
+
+    <div class="banner" id="banner" aria-live="polite"></div>
+
+    <section class="hud" aria-label="Damage and stocks">
+      <div class="card" data-p="0">
+        <span class="card__tag">P1</span>
+        <span class="card__name"></span>
+        <span class="card__pct"><b>0</b><small>%</small></span>
+        <span class="card__stocks"></span>
+      </div>
+      <div class="card" data-p="1">
+        <span class="card__tag">P2</span>
+        <span class="card__name"></span>
+        <span class="card__pct"><b>0</b><small>%</small></span>
+        <span class="card__stocks"></span>
+      </div>
+    </section>
+
+    <div class="debug" id="debug" hidden></div>
+
+    <div class="overlay" id="pause" hidden>
+      <div class="panel" role="dialog" aria-labelledby="pause-title">
+        <p class="label">Paused</p>
+        <h2 id="pause-title">Controls</h2>
+        <table class="keys">
+          <thead>
+            <tr><th></th><th>Player 1</th><th>Player 2</th><th>Gamepad</th></tr>
+          </thead>
+          <tbody>
+            <tr><th>Move</th><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></td><td><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></td><td>Left stick / d-pad</td></tr>
+            <tr><th>Jump</th><td><kbd>Space</kbd> or <kbd>W</kbd></td><td><kbd>R-Shift</kbd> / <kbd>Num0</kbd> or <kbd>↑</kbd></td><td>A / Y</td></tr>
+            <tr><th>Attack</th><td><kbd>F</kbd></td><td><kbd>,</kbd> / <kbd>Num1</kbd></td><td>X</td></tr>
+            <tr><th>Smash</th><td><kbd>G</kbd> (hold to charge)</td><td><kbd>.</kbd> / <kbd>Num2</kbd></td><td>B or right stick</td></tr>
+            <tr><th>Shield</th><td><kbd>H</kbd></td><td><kbd>/</kbd> / <kbd>Num3</kbd></td><td>Bumpers / triggers</td></tr>
+          </tbody>
+        </table>
+        <ul class="tips">
+          <li>Attack plus a direction picks the move: tilts on the ground, aerials in the air.</li>
+          <li>Shield plus left or right rolls, plus down dodges in place. In the air, shield is an air dodge.</li>
+          <li>Down on a platform drops through it. Down while falling fast-falls.</li>
+          <li>Hanging on a ledge: jump, up to climb, down to let go.</li>
+        </ul>
+        <div class="actions">
+          <button type="button" data-act="resume" class="btn">Resume</button>
+          <button type="button" data-act="restart" class="btn btn--line">Restart <kbd>R</kbd></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overlay overlay--end" id="end" hidden>
+      <div class="panel panel--end">
+        <p class="label">Game</p>
+        <h2 id="end-title"></h2>
+        <p class="lede" id="end-sub"></p>
+        <div class="actions">
+          <button type="button" data-act="restart" class="btn">Rematch <kbd>R</kbd></button>
+          <a class="btn btn--line" href="/">Back to site</a>
+        </div>
+      </div>
+    </div>
+
+    <noscript>Brawlverse needs JavaScript and WebGL to run.</noscript>
+    <script type="module" src="/game/main.js"></script>
+  </body>
+</html>

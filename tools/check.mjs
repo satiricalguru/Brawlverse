@@ -33,7 +33,7 @@ const check = (file) =>
     });
   });
 
-const files = [...(await jsFiles('src')), ...(await jsFiles('tools'))].sort();
+const files = [...(await jsFiles('src')), ...(await jsFiles('game')), ...(await jsFiles('tools'))].sort();
 let failed = 0;
 
 for (const file of files) {
