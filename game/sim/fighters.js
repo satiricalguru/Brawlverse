@@ -1,0 +1,80 @@
+import { px } from './fixed.js';
+
+// Grey-box fighters: capsules with real stats and a shared move set. The move set is
+// frame data only (plain JSON-shaped objects), so M2 can swap in per-fighter data and
+// animations without touching the sim.
+//
+// Hitbox fields: f0..f1 active frames (1-based), x/y offset from the feet (x is
+// forward), r radius, dmg percent, ang launch angle in degrees (0 = forward, 90 = up,
+// 270 = down), bkb base knockback, kbg knockback growth.
+
+const hb = (f0, f1, x, y, r, dmg, ang, bkb, kbg) => ({ f0, f1, x: px(x), y: px(y), r: px(r), dmg, ang, bkb, kbg });
+
+// total = frames until the fighter can act again; landing = landing lag for aerials;
+// charge = the frame a smash attack holds on while the button is held
+export const MOVES = {
+  jab: { total: 17, cancel: 11, hits: [hb(3, 4, 52, 82, 30, 3, 50, 16, 24)] },
+  ftilt: { total: 29, hits: [hb(7, 9, 72, 76, 34, 9, 36, 30, 82)] },
+  utilt: { total: 30, hits: [hb(6, 11, 18, 158, 42, 7, 88, 32, 86)] },
+  dtilt: { total: 23, hits: [hb(5, 7, 68, 18, 30, 6, 72, 30, 62)] },
+  fsmash: { total: 50, charge: 10, hits: [hb(16, 18, 88, 80, 42, 16, 38, 40, 102)] },
+  usmash: { total: 46, charge: 8, hits: [hb(12, 16, 0, 172, 48, 15, 90, 40, 110)] },
+  dsmash: {
+    total: 46,
+    charge: 7,
+    hits: [hb(10, 12, 72, 20, 36, 13, 28, 36, 96), hb(10, 12, -72, 20, 36, 13, 152, 36, 96)],
+  },
+  nair: { total: 36, landing: 8, hits: [hb(5, 20, 0, 76, 62, 8, 45, 28, 72)] },
+  fair: { total: 40, landing: 12, hits: [hb(10, 13, 72, 86, 40, 12, 40, 32, 94)] },
+  bair: { total: 36, landing: 10, hits: [hb(8, 11, -72, 76, 38, 13, 140, 34, 96)] },
+  uair: { total: 32, landing: 8, hits: [hb(6, 10, 10, 168, 44, 9, 86, 30, 86)] },
+  dair: { total: 44, landing: 18, hits: [hb(14, 17, 0, -8, 42, 14, 270, 26, 82)] },
+};
+export const MOVE_IDS = Object.keys(MOVES);
+
+const base = {
+  height: px(150),
+  crouchHeight: px(96),
+  radius: px(32),
+  halfWidth: px(28),
+  jumps: 1, // air jumps after leaving the ground
+  squat: 4, // jump-squat frames
+  moves: MOVES,
+};
+
+export const FIGHTERS = [
+  {
+    ...base,
+    name: 'Kael',
+    color: '#ff6a2b',
+    weight: 112,
+    runSpeed: px(6.6),
+    groundAccel: px(1.1),
+    friction: px(0.55),
+    airSpeed: px(4.6),
+    airAccel: px(0.34),
+    gravity: px(0.78),
+    maxFall: px(13),
+    fastFall: px(19),
+    fullHop: px(17.5),
+    shortHop: px(11),
+    airJump: px(16.5),
+  },
+  {
+    ...base,
+    name: 'Nyx',
+    color: '#39d5ff',
+    weight: 94,
+    runSpeed: px(7.8),
+    groundAccel: px(1.4),
+    friction: px(0.7),
+    airSpeed: px(5.2),
+    airAccel: px(0.42),
+    gravity: px(0.74),
+    maxFall: px(12.5),
+    fastFall: px(18.5),
+    fullHop: px(17.5),
+    shortHop: px(10.5),
+    airJump: px(16.5),
+  },
+];

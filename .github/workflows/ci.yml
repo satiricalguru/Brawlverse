@@ -25,6 +25,8 @@ jobs:
       - run: npm ci
       - name: Syntax check
         run: npm run check
+      - name: Simulation tests
+        run: npm test
       - name: Production build
         run: npm run build
       - name: Bundle size report
