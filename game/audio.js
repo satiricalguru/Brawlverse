@@ -114,6 +114,54 @@ export function createAudio() {
       burst({ freq: 1800, q: 0.5, peak: 0.6, decay: 0.8, sweep: 0.15, pan });
       burst({ freq: 6000, type: 'highpass', q: 0.3, peak: 0.3, decay: 0.5, pan });
     },
+    // menus
+    move() {
+      if (!ok()) return;
+      tone({ freq: 880, to: 990, type: 'triangle', peak: 0.08, attack: 0.002, decay: 0.05 });
+    },
+    confirm() {
+      if (!ok()) return;
+      tone({ freq: 660, to: 1320, type: 'triangle', peak: 0.14, decay: 0.12 });
+      burst({ freq: 3000, type: 'bandpass', q: 2, peak: 0.06, decay: 0.08 });
+    },
+    back() {
+      if (!ok()) return;
+      tone({ freq: 520, to: 300, type: 'triangle', peak: 0.1, decay: 0.1 });
+    },
+    // a fighter locked in: a low hit with a bright edge
+    lockIn(pan = 0) {
+      if (!ok()) return;
+      tone({ freq: 140, to: 60, peak: 0.5, decay: 0.25, pan });
+      tone({ freq: 1200, to: 1800, type: 'triangle', peak: 0.12, decay: 0.15, pan });
+      burst({ freq: 2400, q: 0.7, peak: 0.25, decay: 0.2, sweep: 0.4, pan });
+    },
+    // 3, 2, 1 ... GO
+    count(n) {
+      if (!ok()) return;
+      if (n > 0) {
+        tone({ freq: 440, to: 430, type: 'square', peak: 0.12, decay: 0.16 });
+        tone({ freq: 110, to: 70, peak: 0.35, decay: 0.2 });
+      } else {
+        tone({ freq: 880, to: 870, type: 'square', peak: 0.16, decay: 0.45 });
+        tone({ freq: 1320, to: 1310, type: 'triangle', peak: 0.1, decay: 0.5 });
+        tone({ freq: 90, to: 40, peak: 0.7, decay: 0.6 });
+        burst({ freq: 1800, q: 0.5, peak: 0.4, decay: 0.5, sweep: 0.2 });
+      }
+    },
+    // match over: a falling slam, then a short rising arpeggio for the winner
+    game() {
+      if (!ok()) return;
+      tone({ freq: 220, to: 55, type: 'sawtooth', peak: 0.25, decay: 0.8 });
+      tone({ freq: 60, to: 30, peak: 0.8, decay: 0.9 });
+      burst({ freq: 1500, q: 0.5, peak: 0.5, decay: 0.9, sweep: 0.15 });
+    },
+    fanfare() {
+      if (!ok()) return;
+      const notes = [523.25, 659.25, 783.99, 1046.5];
+      notes.forEach((f, i) =>
+        setTimeout(() => ok() && tone({ freq: f, to: f, type: 'triangle', peak: 0.16, attack: 0.01, decay: i === 3 ? 0.9 : 0.22 }), i * 120)
+      );
+    },
     shieldBreak(pan = 0) {
       if (!ok()) return;
       tone({ freq: 900, to: 120, type: 'sawtooth', peak: 0.25, decay: 0.5, pan });

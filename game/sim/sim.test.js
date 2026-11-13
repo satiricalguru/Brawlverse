@@ -234,3 +234,11 @@ test('the ice on Frostspire lets a fighter slide further', () => {
   };
   assert.ok(slide(4) > slide(1) * 1.8, `${slide(4)} vs ${slide(1)}`);
 });
+
+test('a match can start with any number of stocks (training uses 99)', () => {
+  const s = createState({ stocks: 99 });
+  assert.deepEqual(s.fighters.map((f) => f.stocks), [99, 99]);
+  for (let i = 0; i < 600 && s.fighters[0].stocks === 99; i++) step(s, [BTN.LEFT, 0]);
+  assert.equal(s.fighters[0].stocks, 98);
+  assert.equal(s.over, false);
+});

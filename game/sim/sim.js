@@ -61,7 +61,7 @@ export { SHIELD_MAX, STOCKS };
 
 /* ------------------------------------------------------------------ state */
 
-function makeFighter(id, char, spawn) {
+function makeFighter(id, char, spawn, stocks = STOCKS) {
   return {
     id,
     char,
@@ -88,7 +88,7 @@ function makeFighter(id, char, spawn) {
     airdodgeUsed: false,
     dodgeDir: 0, // roll direction, or 1 when an air dodge is directional
     damage: 0,
-    stocks: STOCKS,
+    stocks,
     hitstun: 0, // also used as the counter for shield stun and shield break
     hitlag: 0,
     shield: SHIELD_MAX,
@@ -111,7 +111,8 @@ function makeFighter(id, char, spawn) {
   };
 }
 
-export function createState({ chars = [0, 1], stage = 0 } = {}) {
+// stocks: lives per player (training uses a large number)
+export function createState({ chars = [0, 1], stage = 0, stocks = STOCKS } = {}) {
   const st = STAGES[stage];
   return {
     frame: 0,
@@ -119,7 +120,7 @@ export function createState({ chars = [0, 1], stage = 0 } = {}) {
     over: false,
     winner: -1,
     overFrame: -1,
-    fighters: chars.map((c, i) => makeFighter(i, c, st.spawns[i])),
+    fighters: chars.map((c, i) => makeFighter(i, c, st.spawns[i], stocks)),
   };
 }
 

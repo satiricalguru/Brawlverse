@@ -1,5 +1,8 @@
-// /play entry: local two-player match on the grey-box stage.
+// /play entry: menus, local and online matches, results.
 // A fixed 60 Hz sim driven by an accumulator, rendered every animation frame.
+//
+// Phases: 'menu' (a screen is up; the chosen stage idles behind it), 'countdown'
+// (3-2-1-GO, the sim is frozen), 'match' (the sim runs), 'results' (frozen, results up).
 
 import './style.css';
 import * as sim from './sim/sim.js';
@@ -10,9 +13,12 @@ import { joinRoom, newRoomCode, ROOM_CODE } from './net/online.js';
 import { createInput } from './input.js';
 import { createView } from './view/view.js';
 import { createAudio } from './audio.js';
+import { createScreens } from './ui/screens.js';
+import { createStats } from './ui/stats.js';
 
 const STEP_MS = 1000 / FPS;
 const MAX_STEPS = 4; // after a long stall, catch up at most this many frames per draw
+const TRAINING_STOCKS = 99;
 
 const $ = (s) => document.querySelector(s);
 const canvas = $('#game');
@@ -28,12 +34,10 @@ try {
 }
 
 const input = createInput(window);
-
-// ?net=sim runs each player as its own rollback peer over a fake network (lag, jitter,
-// loss from the URL) and shows P1's side: online play, felt on one machine.
+const stats = createStats(2);
 const params = new URLSearchParams(location.search);
 
-// who fights where: ?p1=kael&p2=nyx&stage=cinder (names or indexes), changeable from the pause menu
+// a link like ?p1=kael&p2=nyx&stage=cinder skips the menus and starts that match
 const byName = (list, v, d) => {
   if (v == null) return d;
   const i = list.findIndex((x) => x.name.toLowerCase().startsWith(String(v).toLowerCase()));
@@ -44,20 +48,31 @@ const setup = {
   chars: [byName(FIGHTERS, params.get('p1'), 0), byName(FIGHTERS, params.get('p2'), 1)],
   stage: byName(sim.STAGES, params.get('stage'), 1),
 };
+const direct = params.has('p1') || params.has('p2') || params.has('stage');
+
+// ?net=sim runs each player as its own rollback peer over a fake network (lag, jitter,
+// loss from the URL) and shows P1's side: online play, felt on one machine.
 const num = (k, d) => (params.has(k) && Number.isFinite(+params.get(k)) ? +params.get(k) : d);
-const NETSIM = params.get('net') === 'sim'
-  ? { latency: num('lag', 80), jitter: num('jitter', 15), loss: num('loss', 0.05), delay: num('delay', 2) }
-  : null;
+const NETSIM =
+  params.get('net') === 'sim' ? { latency: num('lag', 80), jitter: num('jitter', 15), loss: num('loss', 0.05), delay: num('delay', 2) } : null;
+
+let mode = 'versus'; // versus | training | online-host | online-guest
 
 function createDriver() {
+  const opts = { ...setup, ...(mode === 'training' ? { stocks: TRAINING_STOCKS } : {}) };
   if (!NETSIM) {
-    const s = createState(setup);
-    return { state: s, tick: (inp) => step(s, inp), info: () => '' };
+    const s = createState(opts);
+    return {
+      state: s,
+      // the training dummy never presses anything
+      tick: (inp) => step(s, mode === 'training' ? [inp[0] | inp[1], 0] : inp),
+      info: () => '',
+    };
   }
   const net = createLoopback(NETSIM);
   const ends = [net.a, net.b];
   const peers = [0, 1].map((i) => {
-    const p = new RollbackSession({ local: i, sim, send: (b) => ends[i].send(b), delay: NETSIM.delay, stateOptions: setup });
+    const p = new RollbackSession({ local: i, sim, send: (b) => ends[i].send(b), delay: NETSIM.delay, stateOptions: opts });
     ends[i].onMessage((b) => p.receive(b));
     return p;
   });
@@ -78,7 +93,10 @@ function createDriver() {
   };
   return d;
 }
-const tagText = () => (NETSIM ? `Lag sim · ${NETSIM.latency} ms` : sim.STAGES[setup.stage].name);
+const tagText = () =>
+  NETSIM ? `Lag sim · ${NETSIM.latency} ms` : mode === 'training' ? 'Training' : sim.STAGES[setup.stage].name;
+
+let phase = 'menu';
 let driver = createDriver();
 let state = driver.state;
 let paused = false;
@@ -101,6 +119,14 @@ const pctColor = (d) => {
   const [r, g, b] = t < 0.5 ? [255, mix(255, 184, t * 2), mix(255, 107, t * 2)] : [255, mix(184, 59, t * 2 - 1), mix(107, 59, t * 2 - 1)];
   return `rgb(${r} ${g} ${b})`;
 };
+function resetHud() {
+  cards.forEach((c, i) => {
+    c.shown = -1;
+    c.lives = -1;
+    c.char = -1;
+    c.el.querySelector('.card__tag').textContent = link && driver.online && i === link.seat ? `P${i + 1} · You` : `P${i + 1}`;
+  });
+}
 function drawHud() {
   state.fighters.forEach((f, i) => {
     const card = cards[i];
@@ -109,7 +135,7 @@ function drawHud() {
       card.char = f.char;
       const c = FIGHTERS[f.char];
       card.el.style.setProperty('--pc', c.color);
-      card.el.querySelector('.card__name').textContent = c.name;
+      card.el.querySelector('.card__name').textContent = i === 1 && mode === 'training' ? `${c.name} · Dummy` : c.name;
     }
     if (card.shown !== f.damage) {
       if (f.damage > card.shown && card.shown >= 0) {
@@ -123,19 +149,21 @@ function drawHud() {
     }
     if (card.lives !== f.stocks) {
       card.lives = f.stocks;
-      card.stocks.replaceChildren(
-        ...Array.from({ length: 3 }, (_, k) => {
-          const pip = document.createElement('i');
-          if (k >= f.stocks) pip.className = 'lost';
-          return pip;
-        })
-      );
+      if (f.stocks > 9) card.stocks.replaceChildren(document.createTextNode('∞'));
+      else
+        card.stocks.replaceChildren(
+          ...Array.from({ length: 3 }, (_, k) => {
+            const pip = document.createElement('i');
+            if (k >= f.stocks) pip.className = 'lost';
+            return pip;
+          })
+        );
     }
     card.el.classList.toggle('is-out', f.action === ACT.DEAD && f.stocks === 0);
   });
 }
 
-/* ---------- banner, pause, end ---------- */
+/* ---------- banner ---------- */
 const banner = $('#banner');
 let bannerTimer = 0;
 function flash(text, ms = 1100) {
@@ -147,41 +175,143 @@ function flash(text, ms = 1100) {
   bannerTimer = setTimeout(() => banner.classList.remove('is-on'), ms);
 }
 
+/* ---------- screens ---------- */
+const screens = createScreens({
+  audio,
+  onPlay(chosen, m) {
+    Object.assign(setup, chosen);
+    if (m === 'online-host') {
+      mode = 'online-host';
+      hostRoom();
+    } else {
+      mode = m;
+      startMatch();
+    }
+  },
+  onOnline() {
+    openOnline();
+  },
+  onTitle() {
+    toMenu('title');
+  },
+  // the scene behind the menus follows what is highlighted
+  onPreview(p) {
+    if (phase !== 'menu') return;
+    const same = state.stage === p.stage && state.fighters.every((f, i) => f.char === p.chars[i]);
+    if (same) return;
+    clearTimeout(previewTimer);
+    previewTimer = setTimeout(() => {
+      if (phase !== 'menu') return;
+      screens.setup.stage = p.stage;
+      const s = createState({ chars: p.chars, stage: p.stage });
+      driver = { state: s, tick: () => step(s, [0, 0]), info: () => '' };
+      state = s;
+    }, 120);
+  },
+});
+let previewTimer = 0;
+screens.setup.chars = [...setup.chars];
+screens.setup.stage = setup.stage;
+
+// the menus' backdrop: the chosen stage with both fighters idling
+function idleBackdrop() {
+  phase = 'menu';
+  paused = false;
+  pauseEl.hidden = true;
+  const s = createState({ chars: screens.setup.chars, stage: screens.setup.stage });
+  driver = { state: s, tick: () => step(s, [0, 0]), info: () => '' };
+  state = s;
+}
+function toMenu(name) {
+  if (driver.online) leaveOnline();
+  onlineEl.hidden = true;
+  endEl.hidden = true;
+  idleBackdrop();
+  screens.show(name);
+}
+
+/* ---------- countdown and match ---------- */
+const countEl = $('#countdown');
+let countT = 0;
+let countShown = -1;
+function startMatch() {
+  if (driver.online && mode !== 'online-host' && mode !== 'online-guest') leaveOnline();
+  driver = createDriver();
+  state = driver.state;
+  beginCountdown();
+}
+function beginCountdown() {
+  stats.reset();
+  resetHud();
+  endEl.hidden = true;
+  pauseEl.hidden = true;
+  paused = false;
+  endShown = false;
+  $('.tag').textContent = driver.online ? `Online · ${link.mode === 'p2p' ? 'direct' : 'relayed'}` : tagText();
+  screens.show(null);
+  phase = 'countdown';
+  countT = 0;
+  countShown = -1;
+  acc = 0;
+  last = performance.now();
+}
+function updateCountdown(dt) {
+  countT += dt;
+  // 3, 2, 1 each 0.7 s, then GO; online matches skip straight to GO so neither side waits on a timer
+  const step_ = driver.online ? 3 : Math.min(3, Math.floor(countT / 700));
+  if (step_ !== countShown) {
+    countShown = step_;
+    countEl.classList.remove('is-on', 'is-go');
+    void countEl.offsetWidth;
+    countEl.textContent = step_ < 3 ? String(3 - step_) : 'GO!';
+    countEl.classList.add('is-on');
+    if (step_ === 3) countEl.classList.add('is-go');
+    audio.count(3 - step_);
+  }
+  if (step_ === 3) {
+    phase = 'match';
+    acc = 0;
+  }
+}
+
+/* ---------- pause ---------- */
 const pauseEl = $('#pause');
 const endEl = $('#end');
 function setPaused(on) {
+  if (phase !== 'match') return;
   paused = on && !state.over;
   // an online match keeps running under the menu: the other player is still playing
   pauseEl.hidden = !paused;
-  if (paused) drawPicker();
+  $('#pick-note').hidden = !driver.online;
   input.clear();
   if (paused) pauseEl.querySelector('[data-act="resume"]').focus();
-  else canvas.focus?.();
 }
 function restart() {
-  if (driver.online) leaveOnline();
-  driver = createDriver();
-  $('.tag').textContent = tagText();
-  state = driver.state;
-  cards.forEach((c) => {
-    c.shown = -1;
-    c.lives = -1;
-  });
-  endEl.hidden = true;
-  setPaused(false);
-  acc = 0;
-  last = performance.now();
-  flash('Fight!');
+  if (driver.online) return; // a rematch online needs a new room for now
+  startMatch();
 }
 document.addEventListener('click', (e) => {
   const act = e.target.closest('[data-act]')?.dataset.act;
   if (act === 'resume') setPaused(false);
-  if (act === 'restart') restart();
+  else if (act === 'restart') restart();
+  else if (act === 'to-select') {
+    const m = mode === 'training' ? 'training' : 'versus';
+    toMenu(null);
+    screens.openSelect(m);
+  } else if (act === 'to-title') toMenu('title');
+  else if (act === 'to-controls') {
+    pauseEl.hidden = true;
+    screens.openControls(() => {
+      pauseEl.hidden = false;
+      document.body.dataset.screen = 'match';
+    });
+  }
 });
 window.addEventListener('keydown', (e) => {
   if (e.repeat || e.target.closest?.('input, textarea')) return;
-  if (e.code === 'Escape') setPaused(!paused);
-  else if (e.code === 'KeyR' && (paused || state.over)) restart();
+  if (screens.current) return; // the menus handle their own keys
+  if (e.code === 'Escape' && phase === 'match') setPaused(!paused);
+  else if (e.code === 'KeyR' && paused) restart();
   else if (e.code === 'KeyM') flash(audio.toggleMute() ? 'Sound off' : 'Sound on', 900);
   else if (e.code === 'Backquote') {
     view.setDebug(!view.debug);
@@ -189,81 +319,31 @@ window.addEventListener('keydown', (e) => {
   }
 });
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden && !state.over && !driver.online) setPaused(true);
+  if (document.hidden && phase === 'match' && !state.over && !driver.online) setPaused(true);
 });
 
+/* ---------- game over -> results ---------- */
 let endShown = false;
 function checkEnd() {
-  if (!state.over) {
-    endShown = false;
-    return;
-  }
-  if (endShown) return;
+  if (phase !== 'match' || !state.over || endShown) return;
   endShown = true;
-  const w = state.fighters[state.winner];
-  const name = w ? FIGHTERS[w.char].name : 'No one';
   flash('Game!', 1400);
+  audio.game();
   setTimeout(() => {
     if (!state.over) return;
-    $('#end-title').textContent = `${name} wins`;
-    $('#end-sub').textContent = w ? `P${w.id + 1} took it with ${w.stocks} stock${w.stocks === 1 ? '' : 's'} left.` : 'A draw.';
-    endEl.querySelector('[data-act="restart"]').firstChild.textContent = driver.online ? 'Play locally ' : 'Rematch ';
-    endEl.hidden = false;
-    endEl.querySelector('[data-act="restart"]').focus();
-  }, 1500);
-}
-
-/* ---------- match picker (pause menu) ---------- */
-const pickEl = $('#pick');
-function drawPicker() {
-  const online = !!driver.online;
-  const row = (label, items, current, onPick, colorOf) => {
-    const r = document.createElement('div');
-    r.className = 'pick__row';
-    const l = document.createElement('span');
-    l.textContent = label;
-    const opts = document.createElement('div');
-    opts.className = 'pick__opts';
-    items.forEach((it, i) => {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.textContent = it.name;
-      b.setAttribute('aria-pressed', String(i === current));
-      if (colorOf) b.style.setProperty('--pc', colorOf(it));
-      b.disabled = online;
-      b.addEventListener('click', () => onPick(i));
-      opts.append(b);
-    });
-    r.append(l, opts);
-    return r;
-  };
-  const choose = (fn) => (i) => {
-    fn(i);
-    syncUrl();
-    restart();
-  };
-  pickEl.replaceChildren(
-    row('P1', FIGHTERS, setup.chars[0], choose((i) => (setup.chars[0] = i)), (c) => c.color),
-    row('P2', FIGHTERS, setup.chars[1], choose((i) => (setup.chars[1] = i)), (c) => c.color),
-    row('Stage', sim.STAGES, setup.stage, choose((i) => (setup.stage = i)))
-  );
-  $('#pick-note').hidden = !online;
-}
-// keep the address bar in step, so a refresh (or a shared link) gives the same match
-function syncUrl() {
-  const u = new URL(location.href);
-  u.searchParams.set('p1', FIGHTERS[setup.chars[0]].name.toLowerCase());
-  u.searchParams.set('p2', FIGHTERS[setup.chars[1]].name.toLowerCase());
-  u.searchParams.set('stage', sim.STAGES[setup.stage].name.split(' ')[0].toLowerCase());
-  history.replaceState(null, '', u);
+    phase = 'results';
+    screens.setup.chars = [...setup.chars];
+    screens.setup.stage = setup.stage;
+    screens.mode = mode === 'online-guest' ? 'versus' : mode;
+    screens.showResults({ state, stats: stats.data, online: !!driver.online });
+  }, 1600);
 }
 
 /* ---------- online: Play with a Friend ---------- */
 // the room service (server/): local wrangler dev while developing, the deployed Worker
 // otherwise; VITE_ROOMS_URL overrides both
 const ROOMS_URL =
-  import.meta.env.VITE_ROOMS_URL ||
-  (import.meta.env.DEV ? 'ws://127.0.0.1:8787' : 'wss://brawlverse-rooms.brawlverse-rooms.workers.dev');
+  import.meta.env.VITE_ROOMS_URL || (import.meta.env.DEV ? 'ws://127.0.0.1:8787' : 'wss://brawlverse-rooms.brawlverse-rooms.workers.dev');
 const onlineEl = $('#online');
 const roomStatus = $('#room-status');
 let link = null; // the open transport
@@ -305,15 +385,18 @@ function onlineDriver(transport) {
 }
 
 function openOnline(code) {
+  screens.show(null);
   onlineEl.hidden = false;
-  setPaused(false);
-  pauseEl.hidden = true;
-  if (!ROOMS_URL) {
-    status('Online play is not switched on for this build yet.', true);
-    return;
-  }
+  $('#room-host').hidden = true;
+  $('#room-join').hidden = false;
   if (code) join(code);
-  else status('');
+  else status('Create a room to pick the match and get a link, or join with a friend’s code.');
+}
+
+// the host has picked fighters and stage on the select screens; now open the room
+function hostRoom() {
+  onlineEl.hidden = false;
+  join(newRoomCode(), true);
 }
 
 const validSetup = (d) =>
@@ -327,6 +410,7 @@ const validSetup = (d) =>
 
 function join(code, hosting = false) {
   leaveOnline();
+  mode = hosting ? 'online-host' : 'online-guest';
   let gotSetup = false;
   let linkReady = false;
   $('#room-host').hidden = !hosting;
@@ -381,18 +465,8 @@ function join(code, hosting = false) {
 function startOnline() {
   driver = onlineDriver(link);
   state = driver.state;
-  cards.forEach((c, i) => {
-    c.shown = -1;
-    c.lives = -1;
-    c.el.querySelector('.card__tag').textContent = i === link.seat ? `P${i + 1} · You` : `P${i + 1}`;
-  });
   onlineEl.hidden = true;
-  endEl.hidden = true;
-  setPaused(false);
-  acc = 0;
-  last = performance.now();
-  $('.tag').textContent = `Online · ${link.mode === 'p2p' ? 'direct' : 'relayed'}`;
-  flash('Fight!');
+  beginCountdown();
 }
 
 function friendLeft() {
@@ -400,6 +474,7 @@ function friendLeft() {
     status('Your friend left the room.', true);
     return;
   }
+  if (phase === 'results') return;
   $('#end-title').textContent = 'Your friend left';
   $('#end-sub').textContent = 'The connection closed. Start a new room to play again.';
   endEl.hidden = false;
@@ -409,16 +484,19 @@ function leaveOnline() {
   link?.close();
   link = null;
   cards.forEach((c, i) => (c.el.querySelector('.card__tag').textContent = `P${i + 1}`));
-  $('.tag').textContent = tagText();
 }
 
 document.addEventListener('click', async (e) => {
   const act = e.target.closest('[data-act]')?.dataset.act;
   if (act === 'online') openOnline();
-  else if (act === 'host') join(newRoomCode(), true);
-  else if (act === 'close-online') {
+  else if (act === 'host') {
+    // pick the match first, then the room opens with it
+    onlineEl.hidden = true;
+    screens.openSelect('online-host');
+  } else if (act === 'close-online') {
     if (!driver.online) leaveOnline();
     onlineEl.hidden = true;
+    if (!driver.online && phase !== 'match') toMenu('title');
   } else if (act === 'copy') {
     try {
       await navigator.clipboard.writeText($('#room-link').value);
@@ -426,7 +504,7 @@ document.addEventListener('click', async (e) => {
     } catch {
       $('#room-link').select();
     }
-  }
+  } else if (act === 'restart' && !endEl.hidden && driver.online) toMenu('title');
 });
 $('#room-join').addEventListener('submit', (e) => {
   e.preventDefault();
@@ -434,10 +512,6 @@ $('#room-join').addEventListener('submit', (e) => {
   if (!ROOM_CODE.test(code)) return status('Room codes are 5 letters or numbers.', true);
   join(code);
 });
-{
-  const code = (params.get('room') || '').toUpperCase();
-  if (ROOM_CODE.test(code)) openOnline(code);
-}
 
 /* ---------- debug readout ---------- */
 const debugEl = $('#debug');
@@ -456,25 +530,35 @@ function drawDebug(now) {
     (f) => `P${f.id + 1} ${ACT_NAMES[f.action].toLowerCase().padEnd(11)} f${String(f.af).padStart(3)}  hs${f.hitstun} hl${f.hitlag}`
   );
   const net = driver.info();
-  debugEl.textContent = [`frame ${state.frame}  ${fps} fps  hash ${hash(state).toString(16).padStart(8, '0')}`, ...rows, ...(net ? [net] : [])].join('\n');
+  debugEl.textContent = [`${phase}  frame ${state.frame}  ${fps} fps  hash ${hash(state).toString(16).padStart(8, '0')}`, ...rows, ...(net ? [net] : [])].join('\n');
 }
 
 /* ---------- loop ---------- */
 function frame(now) {
   requestAnimationFrame(frame);
-  acc += Math.min(250, now - last);
+  const dt = Math.min(250, now - last);
   last = now;
-  if (paused && !driver.online) acc = 0;
-  let steps = 0;
-  while (acc >= STEP_MS && steps < MAX_STEPS) {
-    driver.tick(input.sample(state.fighters.length));
-    state = driver.state;
-    acc -= STEP_MS;
-    steps++;
+  screens.poll();
+
+  if (phase === 'countdown') updateCountdown(dt);
+  const running = phase === 'menu' || (phase === 'match' && !(paused && !driver.online));
+  if (running) {
+    acc += dt;
+    let steps = 0;
+    while (acc >= STEP_MS && steps < MAX_STEPS) {
+      driver.tick(input.sample(state.fighters.length));
+      state = driver.state;
+      acc -= STEP_MS;
+      steps++;
+    }
+    if (steps === MAX_STEPS) acc = 0;
   }
-  if (steps === MAX_STEPS) acc = 0;
+
   view.render(state);
-  if (driver.online) document.body.classList.toggle('is-waiting', driver.waiting);
+  if (phase === 'match') {
+    stats.update(state);
+    if (driver.online) document.body.classList.toggle('is-waiting', driver.waiting);
+  }
   drawHud();
   checkEnd();
   drawDebug(now);
@@ -486,17 +570,27 @@ if (import.meta.env.DEV) {
     get state() {
       return state;
     },
+    get phase() {
+      return phase;
+    },
     // run n frames with fixed inputs, then draw once
     run(n = 1, inputs = [0, 0]) {
       for (let i = 0; i < n; i++) driver.tick(inputs);
       state = driver.state;
       view.render(state);
+      if (phase === 'match') stats.update(state);
       return state.fighters.map((f) => `${ACT_NAMES[f.action]} af${f.af} x${(f.x / 256) | 0} y${(f.y / 256) | 0} ${f.damage}%`);
     },
     pause(on = true) {
       setPaused(on);
     },
+    // skip the countdown in tests
+    go() {
+      phase = 'match';
+    },
     restart,
+    screens,
+    stats,
     view,
     info: () => driver.info(),
     hash: () => hash(state),
@@ -504,6 +598,18 @@ if (import.meta.env.DEV) {
 }
 
 window.addEventListener('gamepadconnected', (e) => flash(`Gamepad ${e.gamepad.index + 1} connected`, 1400));
-$('.tag').textContent = tagText();
-flash('Fight!');
+
+// where to start: an invite link, a direct match link, or the title screen
+{
+  const code = (params.get('room') || '').toUpperCase();
+  if (ROOM_CODE.test(code)) {
+    idleBackdrop();
+    openOnline(code);
+  } else if (direct || NETSIM) {
+    mode = 'versus';
+    startMatch();
+  } else {
+    toMenu('title');
+  }
+}
 requestAnimationFrame(frame);

@@ -42,40 +42,115 @@
     </section>
 
     <div class="debug" id="debug" hidden></div>
+    <div class="countdown" id="countdown" aria-live="assertive"></div>
 
-    <div class="overlay" id="pause" hidden>
-      <div class="panel" role="dialog" aria-labelledby="pause-title">
-        <p class="label">Paused</p>
-        <h2 id="pause-title">Match</h2>
-        <div class="pick" id="pick" aria-label="Choose fighters and stage"></div>
-        <p class="pick__note" id="pick-note" hidden>Online matches use the host's choices.</p>
-        <h3 class="sub">Controls</h3>
+    <section class="screen screen--title" id="title" hidden aria-labelledby="title-mark">
+      <div class="title__inner">
+        <h1 class="title__mark" id="title-mark">BRAWLVERSE</h1>
+        <p class="title__tag">Every world. One arena.</p>
+        <nav class="menu" id="title-menu" aria-label="Main menu"></nav>
+        <p class="title__hint"><kbd>↑</kbd><kbd>↓</kbd> choose <kbd>Enter</kbd> select · gamepads work too</p>
+      </div>
+    </section>
+
+    <section class="screen screen--select" id="select" hidden aria-labelledby="select-title">
+      <header class="screen__head">
+        <button type="button" class="back" data-screen-act="select-back" aria-label="Back">←</button>
+        <div>
+          <p class="label">Versus</p>
+          <h2 id="select-title">Choose your fighters</h2>
+        </div>
+      </header>
+      <div class="select__grid" id="select-grid"></div>
+      <div class="select__panels">
+        <div class="ppanel" id="select-p1">
+          <span class="ppanel__tag">P1</span>
+          <span class="ppanel__name"></span>
+          <span class="ppanel__role"></span>
+          <div class="ppanel__stats"></div>
+          <span class="ppanel__state"></span>
+          <span class="ppanel__keys"><kbd>A</kbd><kbd>D</kbd> choose <kbd>F</kbd> lock in <kbd>H</kbd> undo</span>
+        </div>
+        <div class="ppanel" id="select-p2">
+          <span class="ppanel__tag">P2</span>
+          <span class="ppanel__name"></span>
+          <span class="ppanel__role"></span>
+          <div class="ppanel__stats"></div>
+          <span class="ppanel__state"></span>
+          <span class="ppanel__keys"><kbd>←</kbd><kbd>→</kbd> choose <kbd>,</kbd> lock in <kbd>/</kbd> undo</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen screen--stage" id="stage-select" hidden aria-labelledby="stage-title">
+      <header class="screen__head">
+        <button type="button" class="back" data-screen-act="stage-back" aria-label="Back">←</button>
+        <div>
+          <p class="label">Arena</p>
+          <h2 id="stage-title">Choose where to fight</h2>
+        </div>
+      </header>
+      <div class="stage__list" id="stage-list"></div>
+    </section>
+
+    <section class="screen screen--controls" id="controls" hidden aria-labelledby="controls-title">
+      <div class="panel">
+        <p class="label">Settings</p>
+        <h2 id="controls-title">Controls</h2>
+        <p class="lede">Click a key to change it, then press the new one. <kbd>Esc</kbd> cancels. Saved in this browser.</p>
         <table class="keys">
           <thead>
-            <tr><th></th><th>Player 1</th><th>Player 2</th><th>Gamepad</th></tr>
+            <tr><th></th><th>Player 1</th><th>Player 2</th></tr>
           </thead>
-          <tbody>
-            <tr><th>Move</th><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></td><td><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></td><td>Left stick / d-pad</td></tr>
-            <tr><th>Jump</th><td><kbd>Space</kbd> or <kbd>W</kbd></td><td><kbd>R-Shift</kbd> / <kbd>Num0</kbd> or <kbd>↑</kbd></td><td>A / Y</td></tr>
-            <tr><th>Attack</th><td><kbd>F</kbd></td><td><kbd>,</kbd> / <kbd>Num1</kbd></td><td>X</td></tr>
-            <tr><th>Smash</th><td><kbd>G</kbd> (hold to charge)</td><td><kbd>.</kbd> / <kbd>Num2</kbd></td><td>B or right stick</td></tr>
-            <tr><th>Shield</th><td><kbd>H</kbd></td><td><kbd>/</kbd> / <kbd>Num3</kbd></td><td>Bumpers / triggers</td></tr>
-          </tbody>
+          <tbody id="controls-body"></tbody>
         </table>
+        <p class="tips">Gamepads: left stick or d-pad to move, A / Y jump, X attack, B or right stick smash, bumpers and triggers shield.</p>
+        <div class="actions">
+          <button type="button" class="btn" data-screen-act="controls-back">Done</button>
+          <button type="button" class="btn btn--line" data-screen-act="controls-reset">Reset to defaults</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen screen--results" id="results" hidden aria-labelledby="results-title">
+      <div class="results__inner">
+        <img class="results__img" id="results-img" alt="" />
+        <div class="results__body">
+          <p class="label">Game</p>
+          <h2 id="results-title"></h2>
+          <p class="lede" id="results-sub"></p>
+          <table class="res"><tbody id="results-body"></tbody></table>
+          <div class="actions">
+            <button type="button" class="btn" id="results-rematch" data-screen-act="rematch">Rematch</button>
+            <button type="button" class="btn btn--line" id="results-select" data-screen-act="reselect">Character select</button>
+            <button type="button" class="btn btn--line" data-screen-act="title">Main menu</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="overlay" id="pause" hidden>
+      <div class="panel panel--pause" role="dialog" aria-labelledby="pause-title">
+        <p class="label">Paused</p>
+        <h2 id="pause-title">Take a breath</h2>
+        <div class="pause__menu">
+          <button type="button" data-act="resume" class="btn">Resume</button>
+          <button type="button" data-act="restart" class="btn btn--line">Restart <kbd>R</kbd></button>
+          <button type="button" data-act="to-select" class="btn btn--line">Character select</button>
+          <button type="button" data-act="to-controls" class="btn btn--line">Controls</button>
+          <button type="button" data-act="to-title" class="btn btn--line">Main menu</button>
+        </div>
+        <p class="pick__note" id="pick-note" hidden>Online matches keep running while this menu is open.</p>
         <details class="more">
           <summary>How to play</summary>
           <ul class="tips">
-          <li>Attack plus a direction picks the move: tilts on the ground, aerials in the air.</li>
-          <li>Shield plus left or right rolls, plus down dodges in place. In the air, shield is an air dodge.</li>
-          <li>Down on a platform drops through it. Down while falling fast-falls.</li>
-          <li>Hanging on a ledge: jump, up to climb, down to let go.</li>
-          <li><kbd>M</kbd> mutes the sound, <kbd>`</kbd> shows hitboxes and the frame readout.</li>
+            <li>Attack plus a direction picks the move: tilts on the ground, aerials in the air. Smash attacks charge while held.</li>
+            <li>Shield plus left or right rolls, plus down dodges in place. In the air, shield is an air dodge.</li>
+            <li>Down on a platform drops through it. Down while falling fast-falls.</li>
+            <li>Hanging on a ledge: jump, up to climb, down to let go.</li>
+            <li><kbd>M</kbd> mutes the sound, <kbd>`</kbd> shows hitboxes and the frame readout.</li>
           </ul>
         </details>
-        <div class="actions">
-          <button type="button" data-act="resume" class="btn">Resume</button>
-          <button type="button" data-act="restart" class="btn btn--line">Restart <kbd>R</kbd></button>
-        </div>
       </div>
     </div>
 

@@ -5,8 +5,20 @@ import { BTN } from './sim/sim.js';
 
 const { LEFT, RIGHT, UP, DOWN, JUMP, ATTACK, STRONG, SHIELD } = BTN;
 
+// the actions a player can bind, in the order the Controls screen lists them
+export const ACTIONS = [
+  ['left', LEFT, 'Left'],
+  ['right', RIGHT, 'Right'],
+  ['up', UP, 'Up'],
+  ['down', DOWN, 'Down'],
+  ['jump', JUMP, 'Jump'],
+  ['attack', ATTACK, 'Attack'],
+  ['strong', STRONG, 'Smash'],
+  ['shield', SHIELD, 'Shield'],
+];
+
 // event.code -> button, per player
-export const KEYS = [
+export const DEFAULT_KEYS = [
   { KeyA: LEFT, KeyD: RIGHT, KeyW: UP, KeyS: DOWN, Space: JUMP, KeyF: ATTACK, KeyG: STRONG, KeyH: SHIELD },
   {
     ArrowLeft: LEFT,
@@ -23,6 +35,45 @@ export const KEYS = [
     Numpad3: SHIELD,
   },
 ];
+
+// the live bindings: defaults, overridden by whatever this browser saved
+const STORE = 'bv-keys-v1';
+const clone = (k) => k.map((m) => ({ ...m }));
+export const KEYS = clone(DEFAULT_KEYS);
+try {
+  const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
+  if (Array.isArray(saved) && saved.length === 2 && saved.every((m) => m && typeof m === 'object')) {
+    const valid = new Set(ACTIONS.map((a) => a[1]));
+    saved.forEach((m, i) => {
+      const clean = Object.fromEntries(Object.entries(m).filter(([k, v]) => typeof k === 'string' && valid.has(v)));
+      if (Object.keys(clean).length) KEYS[i] = clean;
+    });
+  }
+} catch {
+  /* no storage (private window): defaults it is */
+}
+
+// bind `code` to `bit` for a player, replacing that action's other keys and taking the
+// key away from anything else that used it
+export function bindKey(player, bit, code) {
+  for (const m of KEYS) delete m[code];
+  for (const [k, v] of Object.entries(KEYS[player])) if (v === bit) delete KEYS[player][k];
+  KEYS[player][code] = bit;
+  save();
+}
+export function resetKeys() {
+  DEFAULT_KEYS.forEach((m, i) => (KEYS[i] = { ...m }));
+  save();
+}
+function save() {
+  try {
+    localStorage.setItem(STORE, JSON.stringify(KEYS));
+  } catch {
+    /* storage blocked: the change lasts for this visit */
+  }
+}
+// keys bound to an action, for display
+export const keysFor = (player, bit) => Object.entries(KEYS[player]).filter(([, v]) => v === bit).map(([k]) => k);
 
 const DEAD = 0.5; // stick dead zone
 const C_DEAD = 0.6; // right stick, used as a smash stick
@@ -52,12 +103,12 @@ function padBits(p) {
 export function createInput(target = window) {
   const held = new Set();
   const tapped = new Set(); // pressed since the last sample, so a tap shorter than a frame still counts
-  const gameKeys = new Set(KEYS.flatMap((m) => Object.keys(m)));
+  const isGameKey = (code) => KEYS.some((m) => code in m);
 
   const typing = (e) => e.target instanceof HTMLElement && e.target.closest('input, textarea, select, [contenteditable]');
   const down = (e) => {
     if (typing(e)) return;
-    if (gameKeys.has(e.code)) {
+    if (isGameKey(e.code)) {
       e.preventDefault();
       held.add(e.code);
       tapped.add(e.code);
