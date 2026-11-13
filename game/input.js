@@ -51,16 +51,23 @@ function padBits(p) {
 
 export function createInput(target = window) {
   const held = new Set();
+  const tapped = new Set(); // pressed since the last sample, so a tap shorter than a frame still counts
   const gameKeys = new Set(KEYS.flatMap((m) => Object.keys(m)));
 
+  const typing = (e) => e.target instanceof HTMLElement && e.target.closest('input, textarea, select, [contenteditable]');
   const down = (e) => {
+    if (typing(e)) return;
     if (gameKeys.has(e.code)) {
       e.preventDefault();
       held.add(e.code);
+      tapped.add(e.code);
     }
   };
   const up = (e) => held.delete(e.code);
-  const clear = () => held.clear();
+  const clear = () => {
+    held.clear();
+    tapped.clear();
+  };
   target.addEventListener('keydown', down);
   target.addEventListener('keyup', up);
   window.addEventListener('blur', clear);
@@ -73,11 +80,13 @@ export function createInput(target = window) {
         const map = KEYS[i];
         if (!map) continue;
         for (const code of held) if (map[code]) out[i] |= map[code];
+        for (const code of tapped) if (map[code]) out[i] |= map[code];
       }
       const pads = navigator.getGamepads ? [...navigator.getGamepads()].filter(Boolean) : [];
       pads.forEach((p, i) => {
         if (i < players) out[i] |= padBits(p);
       });
+      tapped.clear();
       return out;
     },
     pads() {
