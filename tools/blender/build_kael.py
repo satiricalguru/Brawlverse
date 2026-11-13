@@ -110,7 +110,6 @@ def leg(s, hip, knee, ankle, foot_dir):
     loft(f'cuisse{s}', [hip + V((0, 0, -0.1)), hip.lerp(knee, 0.55), knee + (hip - knee).normalized() * 0.18],
          [0.31, 0.29, 0.24], M_ARM, arc_dir=(out, 210), segs=16, solid=0.045, ref=(0, -1, 0), res=3)
     # knee cop
-    kd = (knee - hip).normalized()
     ellipsoid(f'knee{s}', knee + V((0, -0.17, 0.02)), (0.2, 0.15, 0.2), M_ARM, sub=0)
     surface(f'kneewing{s}', lambda u, v: knee + V((s * (0.12 + 0.12 * u), -0.1 + 0.18 * u - 0.03 * math.sin(v * 3.14),
                                                     0.14 - 0.3 * v)), 5, 5, M_ARM, solid=0.035)

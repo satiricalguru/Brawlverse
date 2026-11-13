@@ -26,3 +26,12 @@ export const onScreen = (el) => {
   const r = el.getBoundingClientRect();
   return r.bottom > 0 && r.top < innerHeight;
 };
+
+// build an element from plain text (never parsed as HTML)
+export const textEl = (tag, cls = '', text = '', attrs = {}) => {
+  const node = document.createElement(tag);
+  if (cls) node.className = cls;
+  if (text) node.textContent = text;
+  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+  return node;
+};

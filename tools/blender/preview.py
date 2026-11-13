@@ -53,9 +53,7 @@ def light(name, kind, loc, energy, color=(1, 1, 1), size=2.0):
     ob = bpy.data.objects.new(name, ld)
     sc.collection.objects.link(ob)
     ob.location = loc
-    d = ob.location.copy()
-    d.z -= 2.4
-    ob.rotation_euler = (-d).to_track_quat('-Z', 'Y').to_euler() if False else (0, 0, 0)
+    ob.rotation_euler = (0, 0, 0)  # aimed by the TRACK_TO constraint below
     tgt = bpy.data.objects.new(name + '_t', None)
     sc.collection.objects.link(tgt)
     tgt.location = (0, 0, 2.3)

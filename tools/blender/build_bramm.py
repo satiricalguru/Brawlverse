@@ -104,7 +104,6 @@ def arm(s, sh, el, wr, fist_c, fist_dir):
     R(f'shoulder{s}', sh + V((0, 0, 0.12)), (0.55, 0.5, 0.48), rot=(0, s * -12, 0))
     R(f'shoulder2{s}', sh + V((s * 0.25, 0.1, -0.25)), (0.36, 0.42, 0.34), rot=(0, s * -30, 0), mat=M_ROCK2)
     band(f'shband{s}', sh + V((s * 0.18, 0, -0.32)), sh + V((s * 0.25, 0, -0.45)), (0.48, 0.45), w=0.13, ref=(0, 1, 0))
-    u = el - sh
     R(f'uarm{s}', sh.lerp(el, 0.55), (0.36, 0.36, 0.44), rot=(0, s * -20, 0))
     R(f'elbow{s}', el + V((s * 0.05, 0.22, 0.05)), (0.3, 0.26, 0.3), rot=(15, 0, 0), mat=M_ROCK2)
     R(f'uarmb{s}', sh.lerp(el, 0.4) + V((-s * 0.18, 0.1, 0)), (0.26, 0.3, 0.32), rot=(0, 0, s * 10), mat=M_ROCK2)
@@ -115,7 +114,6 @@ def arm(s, sh, el, wr, fist_c, fist_dir):
     band(f'fband1{s}', el.lerp(wr, 0.08), el.lerp(wr, 0.2), (0.46, 0.45), w=0.15, n_rivets=12)
     band(f'fband2{s}', el.lerp(wr, 0.78), el.lerp(wr, 0.9), (0.45, 0.44), w=0.15, n_rivets=12)
     # fist: knuckle slabs + palm block + thumb
-    fd = V(fist_dir).normalized()
     R(f'palm{s}', fist_c, (0.36, 0.34, 0.3), rot=(0, 0, s * 4), mat=M_ROCK2)
     for i in range(4):
         x = (-0.24 + i * 0.16) * 1.0
