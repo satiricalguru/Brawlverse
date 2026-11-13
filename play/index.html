@@ -46,7 +46,10 @@
     <div class="overlay" id="pause" hidden>
       <div class="panel" role="dialog" aria-labelledby="pause-title">
         <p class="label">Paused</p>
-        <h2 id="pause-title">Controls</h2>
+        <h2 id="pause-title">Match</h2>
+        <div class="pick" id="pick" aria-label="Choose fighters and stage"></div>
+        <p class="pick__note" id="pick-note" hidden>Online matches use the host's choices.</p>
+        <h3 class="sub">Controls</h3>
         <table class="keys">
           <thead>
             <tr><th></th><th>Player 1</th><th>Player 2</th><th>Gamepad</th></tr>
@@ -59,13 +62,16 @@
             <tr><th>Shield</th><td><kbd>H</kbd></td><td><kbd>/</kbd> / <kbd>Num3</kbd></td><td>Bumpers / triggers</td></tr>
           </tbody>
         </table>
-        <ul class="tips">
+        <details class="more">
+          <summary>How to play</summary>
+          <ul class="tips">
           <li>Attack plus a direction picks the move: tilts on the ground, aerials in the air.</li>
           <li>Shield plus left or right rolls, plus down dodges in place. In the air, shield is an air dodge.</li>
           <li>Down on a platform drops through it. Down while falling fast-falls.</li>
           <li>Hanging on a ledge: jump, up to climb, down to let go.</li>
           <li><kbd>M</kbd> mutes the sound, <kbd>`</kbd> shows hitboxes and the frame readout.</li>
-        </ul>
+          </ul>
+        </details>
         <div class="actions">
           <button type="button" data-act="resume" class="btn">Resume</button>
           <button type="button" data-act="restart" class="btn btn--line">Restart <kbd>R</kbd></button>

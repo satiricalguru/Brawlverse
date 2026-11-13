@@ -45,6 +45,10 @@ export function joinRoom({ url, code, onStatus }) {
     onMessage(fn) {
       handler = fn;
     },
+    // the host tells the guest who is fighting where, before the match starts
+    sendSetup(setup) {
+      signal({ type: 'setup', chars: setup.chars, stage: setup.stage });
+    },
     close() {
       closed = true;
       clearTimeout(timer);
@@ -121,6 +125,9 @@ export function joinRoom({ url, code, onStatus }) {
       case 'ice':
         if (!pc || !pc.remoteDescription) pendingIce.push(m.candidate || undefined);
         else await pc.addIceCandidate(m.candidate || undefined);
+        break;
+      case 'setup':
+        onStatus('setup', { chars: m.chars, stage: m.stage });
         break;
       case 'relay-on':
         ready('relay');

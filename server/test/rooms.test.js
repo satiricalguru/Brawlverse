@@ -51,6 +51,9 @@ test('two peers are seated, introduced, and can relay signalling and packets', a
   b.ws.send(JSON.stringify({ type: 'answer', sdp: 'v=0 back' }));
   assert.deepEqual(await a.next(), { type: 'answer', sdp: 'v=0 back' });
 
+  a.ws.send(JSON.stringify({ type: 'setup', chars: [2, 3], stage: 4 }));
+  assert.deepEqual(await b.next(), { type: 'setup', chars: [2, 3], stage: 4 });
+
   a.ws.send(new Uint8Array([1, 2, 3, 4]));
   assert.deepEqual([...(await b.next())], [1, 2, 3, 4]);
 

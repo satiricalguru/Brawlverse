@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { ACT, FIGHTERS, STAGES, SUB, SHIELD_MAX, activeHitboxes, heightOf, intangible, MOVE_IDS } from '../sim/sim.js';
 import { loadFighterModel } from './model.js';
+import { buildStage } from './stages.js';
 
 // rigged models per fighter, and their moves file (null until that fighter's clips exist: Idle only)
 const MODELS = {
@@ -36,8 +37,9 @@ export function createView(canvas, { audio = null } = {}) {
   const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 200);
   camera.position.set(0, 2.2, 18);
 
-  /* ---------- light ---------- */
-  scene.add(new THREE.HemisphereLight('#9fb2ff', '#1a1020', 0.55));
+  /* ---------- light (each stage sets its own mood) ---------- */
+  const hemi = new THREE.HemisphereLight('#9fb2ff', '#1a1020', 0.55);
+  scene.add(hemi);
   const key = new THREE.DirectionalLight('#fff1e0', 2.4);
   key.position.set(4, 10, 8);
   key.castShadow = true;
@@ -47,99 +49,61 @@ export function createView(canvas, { audio = null } = {}) {
   key.shadow.bias = -0.0004;
   key.shadow.normalBias = 0.02;
   scene.add(key);
-  const rimL = new THREE.PointLight(FIGHTERS[0].color, 18, 30, 2);
-  rimL.position.set(-9, 4, -3);
-  const rimR = new THREE.PointLight(FIGHTERS[1].color, 18, 30, 2);
-  rimR.position.set(9, 4, -3);
-  scene.add(rimL, rimR);
+  // rim lights in each player's colour, behind them
+  const rims = [new THREE.PointLight('#ffffff', 18, 30, 2), new THREE.PointLight('#ffffff', 18, 30, 2)];
+  rims[0].position.set(-9, 4, -3);
+  rims[1].position.set(9, 4, -3);
+  scene.add(...rims);
   // soft fill from the camera side so dark armour still reads
   const fill = new THREE.DirectionalLight('#cfd8ff', 0.9);
   fill.position.set(-2, 3, 12);
   scene.add(fill);
 
   /* ---------- stage ---------- */
-  const st = STAGES[0];
-  const stage = new THREE.Group();
-  scene.add(stage);
-  const rock = new THREE.MeshStandardMaterial({ color: '#2b2735', roughness: 0.78, metalness: 0.15 });
-  const topMat = new THREE.MeshStandardMaterial({ color: '#3a3546', roughness: 0.55, metalness: 0.25 });
-  const edgeMat = new THREE.MeshBasicMaterial({ color: '#f6e7d4' });
-  const DEPTH = 3.2;
-  {
-    const m = st.main;
-    const w = (m.right - m.left) * U;
-    const h = (m.top - m.bottom) * U;
-    const slab = new THREE.Mesh(new THREE.BoxGeometry(w, h, DEPTH), [rock, rock, topMat, rock, rock, rock]);
-    slab.position.set(((m.left + m.right) / 2) * U, (m.top * U) - h / 2, 0);
-    slab.castShadow = slab.receiveShadow = true;
-    stage.add(slab);
-    // tapering underside so it reads as a floating island, not a box
-    // (a 4-sided cylinder turned 45° is a square frustum whose top is √2 wide; scale it to the slab)
-    const ug = new THREE.CylinderGeometry(1, 0.22, 2.4, 4, 1);
-    ug.rotateY(Math.PI / 4);
-    const under = new THREE.Mesh(ug, rock);
-    under.scale.set((w * 0.96) / Math.SQRT2, 1, (DEPTH * 0.96) / Math.SQRT2);
-    under.position.set(slab.position.x, m.bottom * U - 1.2, 0);
-    under.castShadow = true;
-    stage.add(under);
-    // a lit lip along the front edge of the floor
-    const lip = new THREE.Mesh(new THREE.BoxGeometry(w, 0.03, 0.03), edgeMat);
-    lip.position.set(slab.position.x, m.top * U - 0.015, DEPTH / 2);
-    stage.add(lip);
-    for (const l of st.ledges) {
-      const nub = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, DEPTH + 0.02), edgeMat);
-      nub.position.set(l.x * U, l.y * U - 0.04, 0);
-      stage.add(nub);
+  let stageId = -1;
+  let stageV = null;
+  let blastLine = null;
+  function setStage(id) {
+    if (stageV) {
+      scene.remove(stageV.group);
+      stageV.dispose();
     }
+    if (blastLine) scene.remove(blastLine);
+    stageId = id;
+    stageV = buildStage(id);
+    scene.add(stageV.group);
+    const m = stageV.mood;
+    // the backdrop fades into the haze at its lower edge, so the sky behind matches the haze
+    scene.background = new THREE.Color(m.fog[0]);
+    scene.fog = new THREE.Fog(m.fog[0], m.fog[1], m.fog[2]);
+    hemi.color.set(m.hemi[0]);
+    hemi.groundColor.set(m.hemi[1]);
+    hemi.intensity = m.hemi[2];
+    key.color.set(m.key[0]);
+    key.intensity = m.key[1];
+    renderer.toneMappingExposure = m.exposure;
+    // blast zone outline (debug view only)
+    const b = STAGES[id].blast;
+    blastLine = new THREE.LineLoop(
+      new THREE.BufferGeometry().setFromPoints(
+        [
+          [b.left, b.bottom],
+          [b.right, b.bottom],
+          [b.right, b.top],
+          [b.left, b.top],
+        ].map(([x, y]) => new THREE.Vector3(x * U, y * U, 0))
+      ),
+      new THREE.LineDashedMaterial({ color: '#ff4f8b', dashSize: 0.3, gapSize: 0.2 })
+    );
+    blastLine.computeLineDistances();
+    if (blastLine) blastLine.visible = debug;
+    scene.add(blastLine);
   }
-  const platMat = new THREE.MeshStandardMaterial({
-    color: '#4a4458',
-    roughness: 0.4,
-    metalness: 0.4,
-    transparent: true,
-    opacity: 0.92,
-  });
-  for (const p of st.platforms) {
-    const w = (p.right - p.left) * U;
-    const g = new THREE.Mesh(new THREE.BoxGeometry(w, 0.1, DEPTH * 0.7), platMat);
-    g.position.set(((p.left + p.right) / 2) * U, p.top * U - 0.05, 0);
-    g.castShadow = g.receiveShadow = true;
-    stage.add(g);
-    const lip = new THREE.Mesh(new THREE.BoxGeometry(w, 0.02, 0.02), edgeMat);
-    lip.position.set(g.position.x, p.top * U - 0.01, DEPTH * 0.35);
-    stage.add(lip);
-  }
 
-  // backdrop: a faint grid wall and floor far behind, like a training hall
-  const grid = new THREE.GridHelper(80, 80, '#3b3150', '#1d1828');
-  grid.rotation.x = Math.PI / 2;
-  grid.position.set(0, 4, -14);
-  grid.material.transparent = true;
-  grid.material.opacity = 0.55;
-  scene.add(grid);
-  const floorGrid = new THREE.GridHelper(80, 40, '#2a2238', '#17131f');
-  floorGrid.position.set(0, -6, -2);
-  scene.add(floorGrid);
-
-  // blast zone outline (debug view only)
-  const b = st.blast;
-  const blastLine = new THREE.LineLoop(
-    new THREE.BufferGeometry().setFromPoints(
-      [
-        [b.left, b.bottom],
-        [b.right, b.bottom],
-        [b.right, b.top],
-        [b.left, b.top],
-      ].map(([x, y]) => new THREE.Vector3(x * U, y * U, 0))
-    ),
-    new THREE.LineDashedMaterial({ color: '#ff4f8b', dashSize: 0.3, gapSize: 0.2 })
-  );
-  blastLine.computeLineDistances();
-  blastLine.visible = false;
-  scene.add(blastLine);
-
-  /* ---------- fighters ---------- */
-  const fighters = FIGHTERS.slice(0, 2).map((c, i) => {
+  /* ---------- fighters (rebuilt when a player picks someone else) ---------- */
+  const fighters = [null, null];
+  function makeFighter(char, i, mirror) {
+    const c = FIGHTERS[char];
     const color = new THREE.Color(c.color);
     const R = c.radius * U;
     const H = c.height * U;
@@ -159,14 +123,13 @@ export function createView(canvas, { audio = null } = {}) {
     capsule.castShadow = true;
     body.add(capsule);
     // visor on the facing side, so you can read which way a fighter looks
-    const visorMat = new THREE.MeshBasicMaterial({ color: '#fff7ea' });
-    const visor = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.09, R * 1.3), visorMat);
+    const visor = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.09, R * 1.3), new THREE.MeshBasicMaterial({ color: '#fff7ea' }));
     visor.position.set(R * 0.85, H - R * 1.05, 0);
     body.add(visor);
-    // player marker above the head
+    // player marker above the head (white for the second player in a mirror match)
     const marker = new THREE.Mesh(
       new THREE.ConeGeometry(0.09, 0.16, 3),
-      new THREE.MeshBasicMaterial({ color, toneMapped: false })
+      new THREE.MeshBasicMaterial({ color: mirror ? '#ffffff' : color, toneMapped: false })
     );
     marker.rotation.z = Math.PI;
     marker.position.y = H + 0.32;
@@ -174,22 +137,12 @@ export function createView(canvas, { audio = null } = {}) {
     // shield bubble
     const shield = new THREE.Mesh(
       new THREE.SphereGeometry(1, 32, 16),
-      new THREE.MeshBasicMaterial({
-        color,
-        transparent: true,
-        opacity: 0.35,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-        toneMapped: false,
-      })
+      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false })
     );
     shield.position.y = H * 0.5;
     root.add(shield);
     // respawn halo
-    const halo = new THREE.Mesh(
-      new THREE.TorusGeometry(0.42, 0.025, 8, 48),
-      new THREE.MeshBasicMaterial({ color, toneMapped: false })
-    );
+    const halo = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.025, 8, 48), new THREE.MeshBasicMaterial({ color, toneMapped: false }));
     halo.rotation.x = Math.PI / 2;
     halo.position.y = -0.04;
     root.add(halo);
@@ -205,12 +158,14 @@ export function createView(canvas, { audio = null } = {}) {
     const rig = new THREE.Group();
     root.add(rig);
     scene.add(root);
-    const v = { root, body, rig, mat, capsule, visor, marker, shield, halo, hurt, color, H, model: null };
+    rims[i].color.set(c.color);
+    const v = { char, root, body, rig, mat, capsule, visor, marker, shield, halo, hurt, color, H, model: null, gone: false };
     Object.assign(v, { seenHit: -1, seenKo: -1, squash: 1, prevAction: -1, prevMove: -1, prevJumps: c.jumps, prevGrounded: true, lastAf: 0 });
     const urls = MODELS[c.name];
     if (urls) {
       loadFighterModel(urls[0], urls[1], H * 1.08, c.name)
         .then((m) => {
+          if (v.gone) return; // replaced while loading
           v.model = m;
           rig.add(m.root);
           capsule.visible = visor.visible = false;
@@ -218,7 +173,19 @@ export function createView(canvas, { audio = null } = {}) {
         .catch((err) => console.warn(`${c.name}: model failed to load, keeping the capsule`, err));
     }
     return v;
-  });
+  }
+  function syncFighters(state) {
+    state.fighters.forEach((f, i) => {
+      const mirror = i === 1 && state.fighters[0]?.char === f.char;
+      if (fighters[i] && fighters[i].char === f.char && fighters[i].mirror === mirror) return;
+      if (fighters[i]) {
+        fighters[i].gone = true;
+        scene.remove(fighters[i].root);
+      }
+      fighters[i] = makeFighter(f.char, i, mirror);
+      fighters[i].mirror = mirror;
+    });
+  }
 
   // hitbox pool (debug)
   const hitPool = Array.from({ length: 8 }, () => {
@@ -310,7 +277,7 @@ export function createView(canvas, { audio = null } = {}) {
     shake *= Math.exp(-dt * 9);
   }
 
-  const panOf = (f) => Math.max(-1, Math.min(1, f.x / (st.blast.right * 0.6)));
+  const panOf = (f) => Math.max(-1, Math.min(1, f.x / (STAGES[stageId].blast.right * 0.6)));
 
   // sounds for things that just started: swings, jumps, landings, shield breaks
   function cues(f, v) {
@@ -420,6 +387,8 @@ export function createView(canvas, { audio = null } = {}) {
     const dt = Math.min(0.1, (now - lastT) / 1000);
     lastT = now;
 
+    if (state.stage !== stageId) setStage(state.stage);
+    syncFighters(state);
     state.fighters.forEach((f, i) => drawFighter(state, f, fighters[i], dt, now));
 
     let n = 0;
@@ -435,7 +404,7 @@ export function createView(canvas, { audio = null } = {}) {
       }
     }
     for (let i = n; i < hitPool.length; i++) hitPool[i].visible = false;
-    blastLine.visible = debug;
+    if (blastLine) blastLine.visible = debug;
 
     for (let i = effects.length - 1; i >= 0; i--) {
       const e = effects[i];
@@ -452,6 +421,7 @@ export function createView(canvas, { audio = null } = {}) {
     }
 
     frameCamera(state, dt);
+    stageV.update(now / 1000, camera);
     renderer.render(scene, camera);
   }
 
@@ -466,7 +436,7 @@ export function createView(canvas, { audio = null } = {}) {
     },
     // loaded rigged models, for dev tooling
     get models() {
-      return fighters.map((v) => v.model);
+      return fighters.map((v) => v?.model ?? null);
     },
   };
 }

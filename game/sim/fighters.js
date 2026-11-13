@@ -32,6 +32,36 @@ export const MOVES = {
 };
 export const MOVE_IDS = Object.keys(MOVES);
 
+// Derive a fighter's move set from the shared one. Everything stays an integer.
+//   dmg / kbg: percent scale     reach: extra px forward on every hitbox (a weapon)
+//   size: extra px of hitbox radius   speed: frames removed (+) or added (-) to startup
+//   air: same, for aerials only (applied on top of speed)
+const AERIALS = new Set(['nair', 'fair', 'bair', 'uair', 'dair']);
+function tune({ dmg = 100, kbg = 100, reach = 0, size = 0, speed = 0, air = 0 } = {}) {
+  const out = {};
+  for (const id of MOVE_IDS) {
+    const m = MOVES[id];
+    const shift = -(speed + (AERIALS.has(id) ? air : 0));
+    const first = Math.min(...m.hits.map((h) => h.f0));
+    const d = Math.max(shift, 2 - first); // never earlier than frame 2
+    out[id] = {
+      ...m,
+      total: Math.max(m.total + d, 8),
+      ...(m.charge ? { charge: Math.max(1, m.charge + d) } : {}),
+      hits: m.hits.map((h) => ({
+        ...h,
+        f0: h.f0 + d,
+        f1: h.f1 + d,
+        x: h.x === 0 ? 0 : h.x + Math.sign(h.x) * px(reach),
+        r: h.r + px(size),
+        dmg: Math.max(1, Math.round((h.dmg * dmg) / 100)),
+        kbg: Math.round((h.kbg * kbg) / 100),
+      })),
+    };
+  }
+  return out;
+}
+
 const base = {
   height: px(150),
   crouchHeight: px(96),
@@ -39,14 +69,17 @@ const base = {
   halfWidth: px(28),
   jumps: 1, // air jumps after leaving the ground
   squat: 4, // jump-squat frames
-  moves: MOVES,
 };
 
+// the roster: ids are positions in this list, and also what the netcode sends
 export const FIGHTERS = [
   {
     ...base,
     name: 'Kael',
+    role: 'Bruiser',
     color: '#ff6a2b',
+    // slow to start, hits like a falling anvil
+    moves: tune({ dmg: 110, kbg: 104, speed: -1 }),
     weight: 112,
     runSpeed: px(6.6),
     groundAccel: px(1.1),
@@ -63,8 +96,12 @@ export const FIGHTERS = [
   {
     ...base,
     name: 'Nyx',
+    role: 'Duelist',
     color: '#39d5ff',
+    // the greatsword: longer reach, quicker strikes, a little less weight behind them
+    moves: tune({ dmg: 90, kbg: 98, reach: 34, size: 4, speed: 2 }),
     weight: 94,
+    height: px(146),
     runSpeed: px(7.8),
     groundAccel: px(1.4),
     friction: px(0.7),
@@ -76,5 +113,54 @@ export const FIGHTERS = [
     fullHop: px(17.5),
     shortHop: px(10.5),
     airJump: px(16.5),
+  },
+  {
+    ...base,
+    name: 'Bramm',
+    role: 'Heavyweight',
+    color: '#4dff9a',
+    // the hardest to launch, and every hit is a wrecking ball; pays for it in speed
+    moves: tune({ dmg: 128, kbg: 108, size: 10, reach: 10, speed: -3 }),
+    weight: 136,
+    height: px(178),
+    crouchHeight: px(116),
+    radius: px(40),
+    halfWidth: px(36),
+    runSpeed: px(5.4),
+    groundAccel: px(0.9),
+    friction: px(0.6),
+    airSpeed: px(3.9),
+    airAccel: px(0.28),
+    gravity: px(0.86),
+    maxFall: px(14),
+    fastFall: px(20),
+    fullHop: px(16),
+    shortHop: px(10),
+    airJump: px(14.5),
+  },
+  {
+    ...base,
+    name: 'Zephra',
+    role: 'Acrobat',
+    color: '#c77dff',
+    // lives in the air: two extra jumps, fast aerials, light and easy to launch
+    moves: tune({ dmg: 85, kbg: 94, speed: 1, air: 2 }),
+    weight: 80,
+    height: px(140),
+    crouchHeight: px(88),
+    radius: px(28),
+    halfWidth: px(25),
+    jumps: 2,
+    runSpeed: px(7.4),
+    groundAccel: px(1.5),
+    friction: px(0.75),
+    airSpeed: px(6),
+    airAccel: px(0.5),
+    gravity: px(0.64),
+    maxFall: px(11),
+    fastFall: px(16.5),
+    fullHop: px(18),
+    shortHop: px(11.5),
+    airJump: px(15.5),
   },
 ];
