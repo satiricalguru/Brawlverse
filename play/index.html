@@ -19,10 +19,12 @@
         <span>BRAWLVERSE</span>
       </a>
       <span class="tag">Prototype · Proving Grounds</span>
+      <button type="button" class="btn btn--sm" data-act="online">Play online</button>
       <span class="hint"><kbd>Esc</kbd> controls <kbd>M</kbd> sound <kbd>`</kbd> hitboxes</span>
     </header>
 
     <div class="banner" id="banner" aria-live="polite"></div>
+    <p class="waiting" role="status">Waiting for your opponent…</p>
 
     <section class="hud" aria-label="Damage and stocks">
       <div class="card" data-p="0">
@@ -68,6 +70,33 @@
           <button type="button" data-act="resume" class="btn">Resume</button>
           <button type="button" data-act="restart" class="btn btn--line">Restart <kbd>R</kbd></button>
         </div>
+      </div>
+    </div>
+
+    <div class="overlay" id="online" hidden>
+      <div class="panel panel--online" role="dialog" aria-labelledby="online-title">
+        <p class="label">Play with a friend</p>
+        <h2 id="online-title">Send a link. Settle it.</h2>
+        <div class="room" id="room-host" hidden>
+          <div class="room__code" id="room-code" aria-label="Room code"></div>
+          <div class="room__link">
+            <input id="room-link" type="text" readonly aria-label="Invite link" />
+            <button type="button" class="btn" data-act="copy">Copy link</button>
+          </div>
+        </div>
+        <form class="room__join" id="room-join">
+          <label for="join-code">Got a code?</label>
+          <div class="room__link">
+            <input id="join-code" type="text" inputmode="text" autocomplete="off" maxlength="5" placeholder="ABCDE" spellcheck="false" />
+            <button type="submit" class="btn btn--line">Join</button>
+          </div>
+        </form>
+        <p class="room__status" id="room-status" aria-live="polite"></p>
+        <div class="actions">
+          <button type="button" class="btn" data-act="host">Create a room</button>
+          <button type="button" class="btn btn--line" data-act="close-online">Cancel</button>
+        </div>
+        <p class="tips">Each player uses the Player 1 keys (or a gamepad) on their own machine.</p>
       </div>
     </div>
 
